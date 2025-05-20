@@ -1,9 +1,9 @@
-Django>=4.2.0,<5.0.0
-qrcode>=7.4.2
-Pillow>=10.0.0  # Required for QR code generation
-requests>=2.31.0  # For IP intelligence API calls
-python-dotenv>=1.0.0  # For environment variable management
-gunicorn>=21.2.0  # For production deployment
-whitenoise>=6.5.0  # For static file serving
-django-cors-headers>=4.3.0  # For handling CORS
-django-ratelimit>=4.1.0  # For rate limiting 
+Django
+qrcode
+Pillow  # Required for QR code generation
+requests  # For IP intelligence API calls
+python-dotenv  # For environment variable management
+gunicorn  # For production deployment
+whitenoise  # For static file serving
+django-cors-headers  # For handling CORS
+django-ratelimit  # For rate limiting 
