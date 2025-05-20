@@ -1,0 +1,195 @@
+{% extends "avc_app/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - AVC Attendance{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Statistics Overview -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    <h4 class="mb-0">Attendance Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-check fa-2x text-primary mb-2"></i>
+                                    <h6 class="fw-bold text-secondary">Total Sessions</h6>
+                                    <h2 class="fw-bold mb-0">{{ attendance_stats.total_sessions }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #f0fdfa 0%, #e0e7ff 100%);">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-check fa-2x text-success mb-2"></i>
+                                    <h6 class="fw-bold text-secondary">Attended Sessions</h6>
+                                    <h2 class="fw-bold mb-0">{{ attendance_stats.attended_sessions }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #fdf6f0 0%, #e0e7ff 100%);">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                                    <h6 class="fw-bold text-secondary">Attendance Rate</h6>
+                                    <h2 class="fw-bold mb-0">{{ attendance_stats.attendance_percentage }}%</h2>
+                                    <div class="progress mt-2" style="height: 8px;">
+                                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ attendance_stats.attendance_percentage }}%;" aria-valuenow="{{ attendance_stats.attendance_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #f0fdfa 0%, #fdf6f0 100%);">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-award fa-2x {% if attendance_stats.is_eligible_for_sendforth %}text-success{% else %}text-warning{% endif %} mb-2"></i>
+                                    <h6 class="fw-bold text-secondary">Sendforth Status</h6>
+                                    <h2 class="fw-bold mb-0">
+                                        {{ attendance_stats.is_eligible_for_sendforth|yesno:"Eligible,Pending" }}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Session Card -->
+        <div class="col-md-8">
+            {% if active_session %}
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        <h4 class="mb-0">Current Session</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ active_session.name }}</h5>
+                        <p class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ active_session.start_time|date:"F j, Y, g:i a" }} - {{ active_session.end_time|date:"g:i a" }}
+                        </p>
+                        
+                        {% if current_attendance %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                You marked attendance at {{ current_attendance.marked_at|date:"g:i a" }}
+                            </div>
+                        {% else %}
+                            <form id="markAttendanceForm" method="post" action="{% url 'mark_attendance' active_session.id %}" class="mt-3">
+                                {% csrf_token %}
+                                <input type="hidden" name="session_token" value="{{ active_session.session_token }}">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" id="markAttendanceBtn">
+                                    <i class="fas fa-check me-2"></i>Mark Attendance
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5>No Active Session</h5>
+                        <p class="text-muted">There is no active session at the moment.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Recent Attendance History -->
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="fas fa-history me-2"></i>
+                    <h4 class="mb-0">Recent Attendance</h4>
+                </div>
+                <div class="card-body">
+                    {% if recent_attendance %}
+                        <div class="list-group">
+                            {% for record in recent_attendance %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ record.session.name }}</h6>
+                                        <small class="text-muted">{{ record.marked_at|date:"M j, Y, g:i a" }}</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ record.ip_address }}
+                                    </small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No recent attendance records.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Info Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="fas fa-user me-2"></i>
+                    <h4 class="mb-0">User Info</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
+                        <h5>{{ request.user.get_full_name|default:request.user.username }}</h5>
+                        <p class="text-muted">{{ request.user.email }}</p>
+                    </div>
+                    <div class="d-grid">
+                        <a href="{% url 'attendance_history' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-history me-2"></i>View Full History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+let attendanceSubmitting = false;
+document.getElementById('markAttendanceForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (attendanceSubmitting) return;
+    attendanceSubmitting = true;
+    const btn = document.getElementById('markAttendanceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Marking Attendance...';
+    try {
+        const formData = new FormData(this);
+        const response = await fetch(this.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        });
+        const data = await response.json();
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'An error occurred while marking attendance.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Mark Attendance';
+            attendanceSubmitting = false;
+        }
+    } catch (err) {
+        alert('An error occurred while marking attendance.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Mark Attendance';
+        attendanceSubmitting = false;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

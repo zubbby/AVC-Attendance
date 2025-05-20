@@ -1,0 +1,54 @@
+INFO 2025-05-20 12:32:42,092 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:32:42,092 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:32:42,092 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:32:42,092 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:32:42,092 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:32:42,092 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:32:53,131 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:32:53,131 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:32:53,131 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:32:53,155 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:32:53,190 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:32:53,191 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:33:42,573 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:33:42,573 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:33:42,573 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:33:42,588 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:33:42,588 utils IP properties - Private: True, Loopback: True, Multicast: False
+WARNING 2025-05-20 12:33:42,592 utils Loopback IP rejected: 127.0.0.1
+INFO 2025-05-20 12:36:57,579 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:36:57,579 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:36:57,594 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:36:57,594 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:36:57,594 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:36:57,610 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:36:57,610 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:36:57,610 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:44:32,944 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:44:32,944 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:44:32,944 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:44:32,944 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:44:32,991 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:44:32,991 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:44:32,991 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:44:32,991 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:48:31,029 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:48:31,029 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:48:31,029 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:48:31,029 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:48:31,060 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:48:31,060 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:48:31,060 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:48:31,060 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:51:27,483 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:51:27,483 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:51:27,483 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:51:27,483 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 12:59:35,260 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 12:59:35,260 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 12:59:35,260 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 12:59:35,276 utils IP validation successful: 127.0.0.1
+INFO 2025-05-20 13:08:52,044 utils Validating IP: 127.0.0.1
+INFO 2025-05-20 13:08:52,060 utils IP properties - Private: True, Loopback: True, Multicast: False
+INFO 2025-05-20 13:08:52,060 utils Loopback IP allowed in DEBUG mode: 127.0.0.1
+INFO 2025-05-20 13:08:52,060 utils IP validation successful: 127.0.0.1

@@ -1,0 +1,202 @@
+{% extends 'avc_app/base.html' %}
+
+{% block title %}Attendance History - Angelic Voices Choir (AVC) Attendance System{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Statistics Overview -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-chart-pie me-2"></i>
+                <h4 class="mb-0">Angelic Voices Choir (AVC) - Attendance Overview</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-calendar-check fa-2x text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Total Sessions</h6>
+                                <h3 class="mb-0">{{ attendance_stats.total_sessions }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-check fa-2x text-success"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Attended Sessions</h6>
+                                <h3 class="mb-0">{{ attendance_stats.attended_sessions }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-percentage fa-2x text-info"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Attendance Rate</h6>
+                                <h3 class="mb-0">{{ attendance_stats.attendance_percentage }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center p-3 bg-light rounded">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-graduation-cap fa-2x {% if attendance_stats.is_eligible_for_sendforth %}text-success{% else %}text-warning{% endif %}"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">Sendforth Status</h6>
+                                <h3 class="mb-0">
+                                    {% if attendance_stats.is_eligible_for_sendforth %}
+                                        Eligible
+                                    {% else %}
+                                        Not Eligible
+                                    {% endif %}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Overall Attendance Progress</h6>
+                        <span class="text-muted">{{ attendance_stats.attendance_percentage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if attendance_stats.is_eligible_for_sendforth %}bg-success{% else %}bg-warning{% endif %}"
+                             role="progressbar"
+                             style="width: {{ attendance_stats.attendance_percentage }}%;"
+                             aria-valuenow="{{ attendance_stats.attendance_percentage }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        {% if attendance_stats.is_eligible_for_sendforth %}
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            Congratulations! You have met the minimum attendance requirement (75%) for the Angelic Voices Choir (AVC) sendforth ceremony.
+                        {% else %}
+                            <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                            You need to attend more sessions to meet the minimum attendance requirement (75%) for the Angelic Voices Choir (AVC) sendforth ceremony.
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Records Table -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-history me-2"></i>
+                <h4 class="mb-0">Angelic Voices Choir (AVC) - Attendance Records</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Session</th>
+                                <th>Status</th>
+                                <th>Security</th>
+                                <th>IP Address</th>
+                                <th>Device</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-clock text-muted me-2"></i>
+                                            {{ record.timestamp|date:"Y-m-d H:i:s" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ record.qr_code.session.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                            <i class="fas fa-{% if record.is_valid %}check{% else %}times{% endif %} me-1"></i>
+                                            {{ record.is_valid|yesno:"Valid,Invalid" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if record.is_vpn or record.is_proxy or record.is_vps %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-shield-alt me-1"></i>
+                                                Security Alert
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>
+                                                Secure
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-network-wired text-muted me-2"></i>
+                                            {{ record.ip_address }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ record.user_agent|truncatechars:50 }}
+                                        </small>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No attendance records found for Angelic Voices Choir (AVC)</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add custom styles
+const style = document.createElement('style')
+style.textContent = `
+    .progress {
+        height: 0.5rem;
+        border-radius: 1rem;
+    }
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+    .badge {
+        padding: 0.5em 0.75em;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+`
+document.head.appendChild(style)
+</script>
+{% endblock %} 
