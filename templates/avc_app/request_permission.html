@@ -1,60 +1,228 @@
 {% extends 'avc_app/base.html' %}
-
 {% load static %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8">
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Request Attendance Permission</h2>
-        <p class="text-gray-500 mb-6">Submit a valid reason for missing a session. Approved requests may impact your attendance score positively.</p>
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Request Permission</h1>
+            <p class="mt-2 text-sm text-gray-600">Submit a request for late arrival or absence from a session</p>
+        </div>
 
-        <form method="POST" class="space-y-6">
-            {% csrf_token %}
-            
-            {% if form.errors %}
-            <div class="bg-red-50 border border-red-400 text-red-700 p-4 rounded-lg">
-                <strong>Oops! Something went wrong:</strong>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    {% for field, errors in form.errors.items %}
-                        {% for error in errors %}
-                            <li>{{ field|capfirst }}: {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                </ul>
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-6">
+                <form method="post" class="space-y-6" id="permissionForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="rounded-md bg-red-50 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">There were errors with your submission</h3>
+                                <div class="mt-2 text-sm text-red-700">
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Session Selection -->
+                    <div class="space-y-2">
+                        <label for="{{ form.session.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Select Session
+                            <span class="text-red-500">*</span>
+                            <div class="inline-block ml-1 group relative">
+                                <svg class="h-4 w-4 text-gray-400 inline-block cursor-help" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="hidden group-hover:block absolute z-10 w-64 p-2 mt-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg -left-1/2">
+                                    Choose the session you need permission for. Only upcoming sessions are shown.
+                                </div>
+                            </div>
+                        </label>
+                        {{ form.session }}
+                        {% if form.session.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.session.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Reason Selection -->
+                    <div class="space-y-2">
+                        <label for="{{ form.reason.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Reason for Request
+                            <span class="text-red-500">*</span>
+                            <div class="inline-block ml-1 group relative">
+                                <svg class="h-4 w-4 text-gray-400 inline-block cursor-help" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="hidden group-hover:block absolute z-10 w-64 p-2 mt-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg -left-1/2">
+                                    Select whether you'll be late or absent. Late arrivals count as 0.5 attendance, while absences count as 0.
+                                </div>
+                            </div>
+                        </label>
+                        {{ form.reason }}
+                        {% if form.reason.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.reason.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Explanation -->
+                    <div class="space-y-2">
+                        <label for="{{ form.explanation.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Explanation
+                            <span class="text-red-500">*</span>
+                            <div class="inline-block ml-1 group relative">
+                                <svg class="h-4 w-4 text-gray-400 inline-block cursor-help" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="hidden group-hover:block absolute z-10 w-64 p-2 mt-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg -left-1/2">
+                                    Please provide a detailed explanation for your request. This helps administrators make informed decisions.
+                                </div>
+                            </div>
+                        </label>
+                        {{ form.explanation }}
+                        {% if form.explanation.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.explanation.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">Minimum 10 characters required</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex items-center justify-between pt-4">
+                        <a href="{% url 'dashboard' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Back to Dashboard
+                        </a>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Submit Request
+                        </button>
+                    </div>
+                </form>
             </div>
-            {% endif %}
+        </div>
 
-            <!-- Session Field -->
-            <div>
-                <label for="id_session" class="block text-sm font-medium text-gray-700">Select Session</label>
-                <select name="session" id="id_session" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    {% for session in form.fields.session.queryset %}
-                        <option value="{{ session.id }}">{{ session.name }} — {{ session.date|date:"F j, Y, g:i a" }}</option>
-                    {% empty %}
-                        <option disabled>No sessions available for request.</option>
-                    {% endfor %}
-                </select>
+        <!-- Information Card -->
+        <div class="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">Important Information</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>Permission requests must be submitted at least 24 hours before the session.</li>
+                            <li>Late arrivals count as 0.5 attendance points.</li>
+                            <li>Absences count as 0 attendance points.</li>
+                            <li>Administrators will review your request and notify you of their decision.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-
-            <!-- Reason Field -->
-            <div>
-                <label for="id_reason" class="block text-sm font-medium text-gray-700">Reason for Request</label>
-                <textarea name="reason" id="id_reason" rows="4" placeholder="Explain your reason clearly..." class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">{{ form.reason.value }}</textarea>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="pt-4">
-                <button type="submit" class="inline-flex items-center justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow">
-                    Submit Request
-                </button>
-            </div>
-        </form>
-
-        <!-- Info Box -->
-        <div class="mt-10 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded-md text-sm">
-            <strong>Note:</strong> You can only request permission for sessions you haven't marked attendance for. Each request is reviewed by an admin and may count partially toward your attendance.
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('permissionForm');
+    const explanationField = document.querySelector('textarea[name="explanation"]');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    // Add character counter for explanation
+    const charCounter = document.createElement('p');
+    charCounter.className = 'mt-1 text-sm text-gray-500';
+    explanationField.parentNode.appendChild(charCounter);
+
+    explanationField.addEventListener('input', function() {
+        const length = this.value.length;
+        charCounter.textContent = `${length} characters (minimum 10 required)`;
+        
+        // Update counter color based on length
+        if (length < 10) {
+            charCounter.classList.remove('text-green-500');
+            charCounter.classList.add('text-red-500');
+        } else {
+            charCounter.classList.remove('text-red-500');
+            charCounter.classList.add('text-green-500');
+        }
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        if (explanationField.value.length < 10) {
+            e.preventDefault();
+            alert('Please provide a more detailed explanation (minimum 10 characters).');
+            explanationField.focus();
+        }
+    });
+
+    // Add loading state to submit button
+    form.addEventListener('submit', function() {
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Submitting...
+        `;
+    });
+});
+</script>
 {% endblock %}
- 
+
+{% block extra_css %}
+<style>
+    /* Custom styles for form elements */
+    select, textarea {
+        @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm;
+    }
+    
+    textarea {
+        @apply min-h-[100px];
+    }
+
+    /* Tooltip styles */
+    .group:hover .group-hover\:block {
+        display: block;
+    }
+
+    /* Form validation styles */
+    .error {
+        @apply border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500;
+    }
+
+    /* Loading animation */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+</style>
+{% endblock %}
+
+{% endblock %} 
