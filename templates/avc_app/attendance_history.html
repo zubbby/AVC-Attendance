@@ -79,6 +79,7 @@
                                 <th>Date & Time</th>
                                 <th>Session</th>
                                 <th>Status</th>
+                                <th>Details</th>
                                 <th>Security</th>
                                 <th>IP Address</th>
                                 <th>Location</th>
@@ -90,39 +91,72 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <i class="fas fa-clock text-muted me-2"></i>
-                                            {{ record.timestamp|date:"Y-m-d H:i:s" }}
+                                            {{ record.marked_at|date:"M d, Y H:i" }}
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            {{ record.qr_code.session.name }}
-                                        </span>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">{{ record.session.name }}</span>
+                                            <small class="text-muted">
+                                                {{ record.session.start_time|date:"M d, Y" }} {{ record.session.start_time|time:"H:i" }}
+                                            </small>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
-                                            <i class="fas fa-{% if record.is_valid %}check{% else %}times{% endif %} me-1"></i>
-                                            {{ record.is_valid|yesno:"Valid,Invalid" }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if record.is_vpn or record.is_proxy or record.is_vps %}
-                                            <span class="badge bg-warning">
-                                                <i class="fas fa-shield-alt me-1"></i>
-                                                Security Alert
-                                            </span>
+                                        {% if record.permission %}
+                                            {% if record.permission.reason == 'late' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    Late (Permitted)
+                                                </span>
+                                            {% elif record.permission.reason == 'absent' and record.permission.status == 'approved' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>
+                                                    Absent (Permitted)
+                                                </span>
+                                                <small class="d-block text-success mt-1">
+                                                    <i class="fas fa-plus-circle me-1"></i>
+                                                    +0.5 points
+                                                </small>
+                                            {% elif record.permission.status == 'rejected' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times me-1"></i>
+                                                    {{ record.permission.get_reason_display }} (Rejected)
+                                                </span>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>
-                                                Secure
+                                            <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                                <i class="fas fa-{% if record.is_valid %}check{% else %}times{% endif %} me-1"></i>
+                                                {{ record.is_valid|yesno:"Present,Absent" }}
                                             </span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-network-wired text-muted me-2"></i>
-                                            {{ record.ip_address }}
-                                        </div>
+                                        {% if record.permission %}
+                                            <div class="d-flex flex-column">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    {{ record.permission.explanation|truncatechars:50 }}
+                                                </small>
+                                                {% if record.permission.status != 'pending' %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user-shield me-1"></i>
+                                                        By {{ record.permission.approved_by.get_full_name|default:record.permission.approved_by.username }}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">Regular attendance</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                            <i class="fas fa-shield-alt me-1"></i>
+                                            {{ record.is_valid|yesno:"Valid,Invalid" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ record.ip_address }}</small>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
