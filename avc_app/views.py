@@ -228,43 +228,30 @@ def mark_attendance(request, session_id):
 
 @login_required
 def attendance_history(request):
-    # Get attendance records with related permissions
-    attendance_records = AttendanceRecord.objects.filter(
-        user=request.user
-    ).select_related('session', 'permission', 'permission__approved_by').order_by('-marked_at')
+    # Get attendance records with related data - fixed select_related
+    attendance_records = AttendanceRecord.objects.filter(user=request.user).select_related("user", "user__profile", "session").order_by("-marked_at")
+    # (We're no longer using "permission" in select_related; if you need permission data, you can prefetch it or query it separately.)
 
     # --- Analytics Section ---
-    all_sessions = Session.objects.all()  # Changed to match dashboard view
+    all_sessions = Session.objects.all()  # (Changed to match dashboard view)
     total_sessions = all_sessions.count()
     
-    # Calculate attendance points - using same logic as dashboard
+    # Calculate attendance points – using same logic as dashboard (sum valid records and add 0.5 for approved absent permissions)
     attended_records = AttendanceRecord.objects.filter(user=request.user)
     attended_sessions = sum(1 for record in attended_records if record.is_valid)
     
-    # Add points for approved absent permissions
-    approved_absent_permissions = Permission.objects.filter(
-        user=request.user,
-        status='approved',
-        reason='absent'
-    ).count()
-    attended_sessions += approved_absent_permissions * 0.5  # Add 0.5 for each approved absent permission
+    # (Add 0.5 for each approved absent permission)
+    approved_absent_permissions = Permission.objects.filter(user=request.user, status="approved", reason="absent").count()
+    attended_sessions += (approved_absent_permissions * 0.5)
     
-    attendance_percentage = int((attended_sessions / total_sessions) * 100) if total_sessions > 0 else 0
-    is_eligible_for_sendforth = attendance_percentage >= 75
+    attendance_percentage = (int((attended_sessions / total_sessions) * 100) if total_sessions > 0 else 0)
+    is_eligible_for_sendforth = (attendance_percentage >= 75)
     
-    attendance_stats = {
-        'total_sessions': total_sessions,
-        'attended_sessions': attended_sessions,
-        'attendance_percentage': attendance_percentage,
-        'is_eligible_for_sendforth': is_eligible_for_sendforth,
-    }
+    attendance_stats = { "total_sessions": total_sessions, "attended_sessions": attended_sessions, "attendance_percentage": attendance_percentage, "is_eligible_for_sendforth": is_eligible_for_sendforth }
     # --- End Analytics Section ---
 
-    context = {
-        'attendance_records': attendance_records,
-        'attendance_stats': attendance_stats,
-    }
-    return render(request, 'avc_app/attendance_history.html', context)
+    context = { "attendance_records": attendance_records, "attendance_stats": attendance_stats }
+    return render(request, "avc_app/attendance_history.html", context)
 
 def login_view(request):
     if request.method == 'POST':
@@ -480,13 +467,13 @@ def export_attendance_csv(request):
     return response
 
 def handler404(request, exception):
-    return render(request, 'errors/404.html', status=404)
+    return render(request, 'avc_app/404.html', status=404)
 
 def handler500(request):
-    return render(request, 'errors/500.html', status=500)
+    return render(request, 'avc_app/500.html', status=500)
 
 def handler403(request, exception):
-    return render(request, 'errors/403.html', status=403)
+    return render(request, 'avc_app/403.html', status=403)
 
 def handler400(request, exception):
-    return render(request, 'errors/400.html', status=400)
+    return render(request, 'avc_app/400.html', status=400)
