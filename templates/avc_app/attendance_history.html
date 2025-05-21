@@ -139,16 +139,21 @@
                                                     {{ record.permission.explanation|truncatechars:50 }}
                                                 </small>
                                                 {% if record.permission.status != 'pending' %}
-                                                    <small class="text-muted">
+                                                <div class="mt-2">
+                                                    <small class="text-muted d-block">
                                                         <i class="fas fa-user-shield me-1"></i>
                                                         By {{ record.permission.approved_by.get_full_name|default:record.permission.approved_by.username }}
                                                     </small>
                                                     {% if record.permission.admin_comment %}
-                                                        <small class="{% if record.permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} mt-1">
+                                                    <div class="mt-1 p-2 {% if record.permission.status == 'approved' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %} rounded">
+                                                        <small class="{% if record.permission.status == 'approved' %}text-success{% else %}text-danger{% endif %}">
                                                             <i class="fas fa-comment me-1"></i>
-                                                            {{ record.permission.admin_comment }}
+                                                            <strong>Admin Feedback:</strong>
+                                                            <span class="d-block mt-1">{{ record.permission.admin_comment }}</span>
                                                         </small>
+                                                    </div>
                                                     {% endif %}
+                                                </div>
                                                 {% endif %}
                                             </div>
                                         {% else %}
