@@ -88,7 +88,6 @@ DATABASES = {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES', time_zone='+01:00'",
             'charset': 'utf8mb4',
             'use_unicode': True,
-            'time_zone': '+01:00',
             'connect_timeout': 60,
         },
         'TIME_ZONE': 'Africa/Lagos',
@@ -132,9 +131,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
+
+# Only include STATICFILES_DIRS if the directory exists
+static_dir = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [static_dir] if os.path.exists(static_dir) else []
 
 # Media files
 MEDIA_URL = '/media/'
