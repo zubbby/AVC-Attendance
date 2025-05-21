@@ -143,6 +143,12 @@
                                                         <i class="fas fa-user-shield me-1"></i>
                                                         By {{ record.permission.approved_by.get_full_name|default:record.permission.approved_by.username }}
                                                     </small>
+                                                    {% if record.permission.admin_comment %}
+                                                        <small class="{% if record.permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} mt-1">
+                                                            <i class="fas fa-comment me-1"></i>
+                                                            {{ record.permission.admin_comment }}
+                                                        </small>
+                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                         {% else %}
