@@ -152,6 +152,62 @@
                 </div>
             </div>
         </div>
+
+        <!-- Permission Management Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-key me-2"></i>Permission Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <a href="{% url 'request_permission' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Request Permission
+                            </a>
+                        </div>
+                    </div>
+                    {% if user.is_staff %}
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <a href="{% url 'permission_list' %}" class="btn btn-outline-info">
+                                <i class="fas fa-list me-2"></i>Manage Permissions
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if attendance_stats.permission_requests %}
+                <div class="mt-4">
+                    <h6 class="text-muted mb-3">Recent Permission Requests</h6>
+                    <div class="list-group">
+                        {% for permission in attendance_stats.permission_requests|slice:":3" %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ permission.session.title }}</h6>
+                                    <small class="text-muted">
+                                        {{ permission.created_at|date:"F d, Y" }} - {{ permission.get_reason_display }}
+                                    </small>
+                                </div>
+                                <span class="badge {% if permission.status == 'pending' %}bg-warning{% elif permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ permission.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if attendance_stats.permission_requests|length > 3 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'permission_list' %}" class="btn btn-link">View All Requests</a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
