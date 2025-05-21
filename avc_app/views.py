@@ -406,7 +406,7 @@ def export_permissions_csv(request):
     # Write headers
     writer.writerow([
         'Request ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
-        'Reason', 'Explanation', 'Status', 'Admin Comment', 'Requested At',
+        'Reason', 'Explanation', 'Status', 'Comment', 'Requested At',
         'Processed By', 'Processed At'
     ])
     
@@ -426,7 +426,7 @@ def export_permissions_csv(request):
             perm.get_reason_display(),
             perm.explanation,
             perm.get_status_display(),
-            perm.admin_comment or '',
+            getattr(perm, 'comment', ''),  # Use getattr to safely access the comment field
             perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             perm.approved_by.get_full_name() if perm.approved_by else '',
             perm.updated_at.strftime('%Y-%m-%d %H:%M:%S') if perm.status != 'pending' else ''
@@ -478,3 +478,15 @@ def export_attendance_csv(request):
         ])
     
     return response
+
+def handler404(request, exception):
+    return render(request, 'errors/404.html', status=404)
+
+def handler500(request):
+    return render(request, 'errors/500.html', status=500)
+
+def handler403(request, exception):
+    return render(request, 'errors/403.html', status=403)
+
+def handler400(request, exception):
+    return render(request, 'errors/400.html', status=400)
