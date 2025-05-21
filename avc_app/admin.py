@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Session, AttendanceRecord
+from .models import Permission, Session, AttendanceRecord, IPBlacklist
 from .user_profile import UserProfile
 
 @admin.register(Session)
@@ -22,4 +22,41 @@ class AttendanceRecordAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'session__name', 'ip_address')
     readonly_fields = ('marked_at',)
 
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'avc_id', 'session', 'reason', 'status', 'created_at', 'approved_by', 'updated_at')
+    list_filter = ('status', 'reason', 'created_at', 'updated_at')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'user__profile__avc_id', 'explanation', 'admin_comment')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('user', 'session', 'approved_by')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user', 'avc_id')
+        }),
+        ('Request Details', {
+            'fields': ('session', 'reason', 'explanation')
+        }),
+        ('Administrative', {
+            'fields': ('status', 'admin_comment', 'approved_by')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def avc_id(self, obj):
+        return obj.user.profile.avc_id
+    avc_id.short_description = 'AVC ID'
+    avc_id.admin_order_field = 'user__profile__avc_id'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'user', 'user__profile', 'session', 'approved_by'
+        )
+
 admin.site.register(UserProfile)
+admin.site.register(IPBlacklist)
