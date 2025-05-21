@@ -132,12 +132,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Only include STATICFILES_DIRS if the directory exists
-static_dir = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = [static_dir] if os.path.exists(static_dir) else []
+# Static files configuration
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
-# WhiteNoise configuration
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# WhiteNoise configuration for production
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Cache static files for a long time
+    WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
