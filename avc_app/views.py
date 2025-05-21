@@ -291,6 +291,18 @@ def request_permission(request):
     if request.method == 'POST':
         form = PermissionRequestForm(request.POST, user=request.user)
         if form.is_valid():
+            # Check if request is at least 30 minutes before session
+            session = form.cleaned_data['session']
+            now = timezone.now()
+            min_time_before = session.start_time - timezone.timedelta(minutes=30)
+            
+            if now > min_time_before:
+                messages.error(request, 'Permission requests must be submitted at least 30 minutes before the session.')
+                return render(request, 'avc_app/request_permission.html', {
+                    'form': form,
+                    'title': 'Request Permission'
+                })
+            
             permission = form.save(commit=False)
             permission.user = request.user
             permission.save()
@@ -441,13 +453,14 @@ def export_attendance_csv(request):
         'Marked At', 'IP Address', 'Location', 'Valid'
     ])
     
-    # Get all attendance records with related data
+    # Get all attendance records with related data - fixed select_related
     records = AttendanceRecord.objects.select_related(
-        'user', 'user__profile', 'session', 'permission', 'permission__approved_by'
-    ).order_by('-marked_at')
+        'user', 'user__profile', 'session'
+    ).prefetch_related('permission').order_by('-marked_at')
     
     # Write data rows
     for record in records:
+        permission = record.permission_set.first()  # Get the first permission if exists
         writer.writerow([
             record.id,
             record.user.get_full_name() or record.user.username,
@@ -455,9 +468,9 @@ def export_attendance_csv(request):
             record.session.name,
             record.session.start_time.strftime('%Y-%m-%d %H:%M'),
             'Present' if record.is_valid else 'Absent',
-            record.permission.get_status_display() if record.permission else 'N/A',
-            record.permission.get_reason_display() if record.permission else 'N/A',
-            record.permission.admin_comment if record.permission and record.permission.admin_comment else '',
+            permission.get_status_display() if permission else 'N/A',
+            permission.get_reason_display() if permission else 'N/A',
+            permission.admin_comment if permission and permission.admin_comment else '',
             record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
             record.ip_address,
             record.location or 'Unknown',
