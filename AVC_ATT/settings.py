@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-hwvgh(z$m47hn$ta=f!w^@8wukq=oh*-2l@x((888@k0kl*q(('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = False  # Set to False for production
 
-ALLOWED_HOSTS = ['avc-attendance.onrender.com']
+ALLOWED_HOSTS = ['avc-attendance.onrender.com', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -138,15 +138,14 @@ if os.path.exists(os.path.join(BASE_DIR, 'static')):
         os.path.join(BASE_DIR, 'static'),
     ]
 else:
-    STATICFILES_DIRS = []  # Empty list for environments where static directory doesn't exist
+    STATICFILES_DIRS = []
 
-# WhiteNoise configuration for production
-if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    # Cache static files for a long time
-    WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
-else:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find static files in your apps
+WHITENOISE_MANIFEST_STRICT = False  # Don't fail if a file is missing
+WHITENOISE_ALLOW_ALL_ORIGINS = True  # Allow all origins to access static files
+WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
 
 # Media files
 MEDIA_URL = '/media/'
