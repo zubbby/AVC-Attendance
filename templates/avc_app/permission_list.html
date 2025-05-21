@@ -115,9 +115,17 @@
                                     {{ permission.get_status_display }}
                                 </span>
                                 {% if permission.status != 'pending' %}
-                                <small class="d-block text-muted mt-1">
-                                    by {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
-                                </small>
+                                <div class="mt-1">
+                                    <small class="text-muted d-block">
+                                        by {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
+                                    </small>
+                                    {% if permission.admin_comment %}
+                                    <small class="{% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} d-block mt-1">
+                                        <i class="fas fa-comment me-1"></i>
+                                        {{ permission.admin_comment }}
+                                    </small>
+                                    {% endif %}
+                                </div>
                                 {% endif %}
                             </td>
                             <td>
@@ -224,7 +232,10 @@
                                                 <div class="timeline-content">
                                                     <h6 class="mb-1">Request Submitted</h6>
                                                     <p class="mb-0 text-muted">{{ permission.created_at|date:"M d, Y H:i" }}</p>
-                                                    <p class="mt-2">{{ permission.explanation }}</p>
+                                                    <div class="mt-2 p-2 bg-light rounded">
+                                                        <strong>Explanation:</strong>
+                                                        <p class="mb-0">{{ permission.explanation }}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="timeline-item">
@@ -232,10 +243,15 @@
                                                 <div class="timeline-content">
                                                     <h6 class="mb-1">Request {{ permission.get_status_display }}</h6>
                                                     <p class="mb-0 text-muted">{{ permission.updated_at|date:"M d, Y H:i" }}</p>
-                                                    <p class="mt-2">
-                                                        <strong>By:</strong> {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}<br>
-                                                        <strong>Comment:</strong> {{ permission.admin_comment }}
-                                                    </p>
+                                                    <div class="mt-2 p-2 {% if permission.status == 'approved' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %} rounded">
+                                                        <strong>Admin Feedback:</strong>
+                                                        <p class="mb-0 {% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %}">
+                                                            {{ permission.admin_comment }}
+                                                        </p>
+                                                        <small class="text-muted mt-1 d-block">
+                                                            By {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
+                                                        </small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
