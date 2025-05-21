@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.cache import cache
 from django.conf import settings
@@ -20,6 +20,8 @@ from .utils import get_client_ip, check_ip_security, validate_ip_address
 from django.db import IntegrityError
 from .forms import PermissionRequestForm, PermissionApprovalForm
 from django.core.paginator import Paginator
+import csv
+from datetime import datetime
 
 def signup_view(request):
     if request.method == 'POST':
@@ -376,3 +378,90 @@ def approve_permission(request, permission_id):
         messages.error(request, 'Invalid form submission.')
     
     return redirect('permission_list')
+
+@login_required
+def export_permissions_csv(request):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="permission_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    # Create CSV writer
+    writer = csv.writer(response)
+    
+    # Write headers
+    writer.writerow([
+        'Request ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
+        'Reason', 'Explanation', 'Status', 'Admin Comment', 'Requested At',
+        'Processed By', 'Processed At'
+    ])
+    
+    # Get all permissions with related data
+    permissions = Permission.objects.select_related(
+        'user', 'user__profile', 'session', 'approved_by'
+    ).order_by('-created_at')
+    
+    # Write data rows
+    for perm in permissions:
+        writer.writerow([
+            perm.id,
+            perm.user.get_full_name() or perm.user.username,
+            perm.user.profile.avc_id,
+            perm.session.name,
+            perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
+            perm.get_reason_display(),
+            perm.explanation,
+            perm.get_status_display(),
+            perm.admin_comment or '',
+            perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            perm.approved_by.get_full_name() if perm.approved_by else '',
+            perm.updated_at.strftime('%Y-%m-%d %H:%M:%S') if perm.status != 'pending' else ''
+        ])
+    
+    return response
+
+@login_required
+def export_attendance_csv(request):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    # Create the HttpResponse object with CSV header
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendance_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    # Create CSV writer
+    writer = csv.writer(response)
+    
+    # Write headers
+    writer.writerow([
+        'Record ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
+        'Status', 'Permission Status', 'Permission Reason', 'Admin Comment',
+        'Marked At', 'IP Address', 'Location', 'Valid'
+    ])
+    
+    # Get all attendance records with related data
+    records = AttendanceRecord.objects.select_related(
+        'user', 'user__profile', 'session', 'permission', 'permission__approved_by'
+    ).order_by('-marked_at')
+    
+    # Write data rows
+    for record in records:
+        writer.writerow([
+            record.id,
+            record.user.get_full_name() or record.user.username,
+            record.user.profile.avc_id,
+            record.session.name,
+            record.session.start_time.strftime('%Y-%m-%d %H:%M'),
+            'Present' if record.is_valid else 'Absent',
+            record.permission.get_status_display() if record.permission else 'N/A',
+            record.permission.get_reason_display() if record.permission else 'N/A',
+            record.permission.admin_comment if record.permission and record.permission.admin_comment else '',
+            record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
+            record.ip_address,
+            record.location or 'Unknown',
+            'Yes' if record.is_valid else 'No'
+        ])
+    
+    return response
