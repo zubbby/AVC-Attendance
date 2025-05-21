@@ -7,3 +7,4 @@ gunicorn  # For production deployment
 whitenoise  # For static file serving
 django-cors-headers  # For handling CORS
 django-ratelimit  # For rate limiting 
+mysqlclient
