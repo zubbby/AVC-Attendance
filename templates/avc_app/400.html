@@ -1,0 +1,15 @@
+{% extends 'avc_app/base_error.html' %}
+
+{% block error_icon %}
+<i class="fas fa-exclamation-circle"></i>
+{% endblock %}
+
+{% block error_title %}400 - Bad Request{% endblock %}
+
+{% block error_message %}
+The server couldn't understand your request.
+{% endblock %}
+
+{% block error_details %}
+<p class="text-muted">Please check your input and try again.</p>
+{% endblock %} 

@@ -1,0 +1,15 @@
+{% extends 'avc_app/base_error.html' %}
+
+{% block error_icon %}
+<i class="fas fa-lock"></i>
+{% endblock %}
+
+{% block error_title %}403 - Access Denied{% endblock %}
+
+{% block error_message %}
+You don't have permission to access this page.
+{% endblock %}
+
+{% block error_details %}
+<p class="text-muted">Please make sure you're logged in and have the necessary permissions.</p>
+{% endblock %} 

@@ -1,0 +1,15 @@
+{% extends 'avc_app/base_error.html' %}
+
+{% block error_icon %}
+<i class="fas fa-exclamation-triangle"></i>
+{% endblock %}
+
+{% block error_title %}500 - Server Error{% endblock %}
+
+{% block error_message %}
+Something went wrong on our end. We're working to fix it.
+{% endblock %}
+
+{% block error_details %}
+<p class="text-muted">Please try again later or contact support if the problem persists.</p>
+{% endblock %} 
