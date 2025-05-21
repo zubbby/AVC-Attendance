@@ -88,10 +88,17 @@ DATABASES = {
         'HOST': '78.46.40.242',
         'PORT': '3306',
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', time_zone='+01:00'",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'time_zone': '+01:00',
+            'connect_timeout': 60,
         },
+        'TIME_ZONE': 'Africa/Lagos',
+        'USE_TZ': True,
     }
 }
+
 
 
 # Password validation
