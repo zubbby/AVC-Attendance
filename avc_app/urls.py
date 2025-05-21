@@ -13,4 +13,6 @@ urlpatterns = [
     path('request-permission/', views.request_permission, name='request_permission'),
     path('permissions/', views.permission_list, name='permission_list'),
     path('permissions/<int:permission_id>/approve/', views.approve_permission, name='approve_permission'),
+    path('export/permissions/', views.export_permissions_csv, name='export_permissions_csv'),
+    path('export/attendance/', views.export_attendance_csv, name='export_attendance_csv'),
 ] 
