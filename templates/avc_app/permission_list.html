@@ -1,260 +1,363 @@
 {% extends 'avc_app/base.html' %}
-
-{% block title %}Attendance History - AVC Attendance System{% endblock %}
+{% load static %}
 
 {% block content %}
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-    body { font-family: 'Inter', sans-serif; }
-    .card { transition: box-shadow 0.2s, transform 0.2s; }
-    .card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.12); transform: translateY(-2px) scale(1.02); }
-</style>
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);">
-            <div class="card-body text-center">
-                <i class="fas fa-calendar-check fa-2x text-primary mb-2"></i>
-                <h6 class="fw-bold text-secondary">Total Sessions</h6>
-                <h2 class="fw-bold mb-0">{{ attendance_stats.total_sessions }}</h2>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h4 class="mb-0">Permission Requests</h4>
+            <div class="btn-group">
+                <a href="{% url 'export_permissions_csv' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-file-csv me-1"></i> Export Permissions
+                </a>
+                <a href="{% url 'export_attendance_csv' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-file-csv me-1"></i> Export Attendance
+                </a>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #f0fdfa 0%, #e0e7ff 100%);">
-            <div class="card-body text-center">
-                <i class="fas fa-user-check fa-2x text-success mb-2"></i>
-                <h6 class="fw-bold text-secondary">Attended Sessions</h6>
-                <h2 class="fw-bold mb-0">{{ attendance_stats.attended_sessions }}</h2>
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #fdf6f0 0%, #e0e7ff 100%);">
-            <div class="card-body text-center">
-                <i class="fas fa-percentage fa-2x text-info mb-2"></i>
-                <h6 class="fw-bold text-secondary">Attendance Rate</h6>
-                <h2 class="fw-bold mb-0">{{ attendance_stats.attendance_percentage }}%</h2>
-                <div class="progress mt-2" style="height: 8px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ attendance_stats.attendance_percentage }}%;" aria-valuenow="{{ attendance_stats.attendance_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
+
+        <!-- Filter Section -->
+        <div class="collapse" id="filterCollapse">
+            <div class="card-body border-bottom">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Reason</label>
+                        <select name="reason" class="form-select">
+                            <option value="">All Reasons</option>
+                            <option value="late" {% if request.GET.reason == 'late' %}selected{% endif %}>Late</option>
+                            <option value="absent" {% if request.GET.reason == 'absent' %}selected{% endif %}>Absent</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date Range</label>
+                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+                        <a href="{% url 'permission_list' %}" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </form>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow border-0 rounded-4 h-100 bg-gradient" style="background: linear-gradient(135deg, #f0fdfa 0%, #fdf6f0 100%);">
-            <div class="card-body text-center">
-                <i class="fas fa-award fa-2x {% if attendance_stats.is_eligible_for_sendforth %}text-success{% else %}text-warning{% endif %} mb-2"></i>
-                <h6 class="fw-bold text-secondary">Sendforth Status</h6>
-                <h2 class="fw-bold mb-0">
-                    {{ attendance_stats.is_eligible_for_sendforth|yesno:"Eligible,Pending" }}
-                </h2>
+
+        <div class="card-body">
+            {% if permissions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Session</th>
+                            <th>Reason</th>
+                            <th>Explanation</th>
+                            <th>Status</th>
+                            <th>Timeline</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for permission in permissions %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-primary text-white me-2">
+                                        {{ permission.user.get_full_name|default:permission.user.username|make_list|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ permission.user.get_full_name|default:permission.user.username }}</div>
+                                        <small class="text-muted">{{ permission.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold">{{ permission.session.name }}</span>
+                                    <small class="text-muted">
+                                        {{ permission.session.start_time|date:"M d, Y" }} {{ permission.session.start_time|time:"H:i" }}
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {% if permission.reason == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ permission.get_reason_display }}
+                                </span>
+                                {% if permission.reason == 'absent' %}
+                                <small class="d-block text-muted mt-1">Affects attendance</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip" title="{{ permission.explanation }}">
+                                    {{ permission.explanation|truncatechars:50 }}
+                                </button>
+                            </td>
+                            <td>
+                                <span class="badge {% if permission.status == 'pending' %}bg-warning{% elif permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ permission.get_status_display }}
+                                </span>
+                                {% if permission.status != 'pending' %}
+                                <div class="mt-1">
+                                    <small class="text-muted d-block">
+                                        by {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
+                                    </small>
+                                    {% if permission.admin_comment %}
+                                    <small class="{% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} d-block mt-1">
+                                        <i class="fas fa-comment me-1"></i>
+                                        {{ permission.admin_comment }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <small class="text-muted">Requested: {{ permission.created_at|date:"M d, Y H:i" }}</small>
+                                    {% if permission.status != 'pending' %}
+                                    <small class="text-muted">Updated: {{ permission.updated_at|date:"M d, Y H:i" }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if permission.status == 'pending' %}
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#approvalModal{{ permission.id }}">
+                                    <i class="fas fa-check me-1"></i>Review
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ permission.id }}">
+                                    <i class="fas fa-eye me-1"></i>Details
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Approval Modal -->
+                        {% if permission.status == 'pending' %}
+                        <div class="modal fade" id="approvalModal{{ permission.id }}" tabindex="-1" aria-labelledby="approvalModalLabel{{ permission.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="approvalModalLabel{{ permission.id }}">Review Permission Request</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'approve_permission' permission.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                {% if permission.reason == 'absent' %}
+                                                Approving this request will add 0.5 to the user's attendance count.
+                                                {% else %}
+                                                This request will not affect the user's attendance count.
+                                                {% endif %}
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">User</label>
+                                                <p class="mb-0">{{ permission.user.get_full_name|default:permission.user.username }}</p>
+                                                <small class="text-muted">{{ permission.user.email }}</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Session</label>
+                                                <p class="mb-0">{{ permission.session.name }}</p>
+                                                <small class="text-muted">
+                                                    {{ permission.session.start_time|date:"M d, Y" }} {{ permission.session.start_time|time:"H:i" }}
+                                                </small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Reason</label>
+                                                <p class="mb-0">
+                                                    <span class="badge {% if permission.reason == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                        {{ permission.get_reason_display }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Explanation</label>
+                                                <p class="border rounded p-2 bg-light">{{ permission.explanation }}</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Status</label>
+                                                <select name="status" class="form-select" required>
+                                                    <option value="approved">Approve</option>
+                                                    <option value="rejected">Reject</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Admin Comment</label>
+                                                <textarea name="admin_comment" class="form-control" rows="3" required 
+                                                    placeholder="Please provide a reason for your decision..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-primary">Submit Decision</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Details Modal -->
+                        {% if permission.status != 'pending' %}
+                        <div class="modal fade" id="detailsModal{{ permission.id }}" tabindex="-1" aria-labelledby="detailsModalLabel{{ permission.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="detailsModalLabel{{ permission.id }}">Permission Request Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="timeline">
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker bg-primary"></div>
+                                                <div class="timeline-content">
+                                                    <h6 class="mb-1">Request Submitted</h6>
+                                                    <p class="mb-0 text-muted">{{ permission.created_at|date:"M d, Y H:i" }}</p>
+                                                    <div class="mt-2 p-2 bg-light rounded">
+                                                        <strong>Explanation:</strong>
+                                                        <p class="mb-0">{{ permission.explanation }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker {% if permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                                                <div class="timeline-content">
+                                                    <h6 class="mb-1">Request {{ permission.get_status_display }}</h6>
+                                                    <p class="mb-0 text-muted">{{ permission.updated_at|date:"M d, Y H:i" }}</p>
+                                                    <div class="mt-2 p-2 {% if permission.status == 'approved' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %} rounded">
+                                                        <strong>Admin Feedback:</strong>
+                                                        <p class="mb-0 {% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %}">
+                                                            {{ permission.admin_comment }}
+                                                        </p>
+                                                        <small class="text-muted mt-1 d-block">
+                                                            By {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5>No Permission Requests Found</h5>
+                <p class="text-muted">There are no permission requests matching your criteria.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Attendance Records -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-history me-2"></i>
-                    <h4 class="mb-0">AVC Attendance History</h4>
-                </div>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                        <i class="fas fa-print me-1"></i> Print
-                    </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportToCSV()">
-                        <i class="fas fa-file-csv me-1"></i> Export
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>Session</th>
-                                <th>Status</th>
-                                <th>Details</th>
-                                <th>Security</th>
-                                <th>IP Address</th>
-                                <th>Location</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in attendance_records %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-clock text-muted me-2"></i>
-                                            {{ record.marked_at|date:"M d, Y H:i" }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-bold">{{ record.session.name }}</span>
-                                            <small class="text-muted">
-                                                {{ record.session.start_time|date:"M d, Y" }} {{ record.session.start_time|time:"H:i" }}
-                                            </small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if record.permission %}
-                                            {% if record.permission.reason == 'late' %}
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-clock me-1"></i>
-                                                    Late (Permitted)
-                                                </span>
-                                            {% elif record.permission.reason == 'absent' and record.permission.status == 'approved' %}
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-check me-1"></i>
-                                                    Absent (Permitted)
-                                                </span>
-                                                <small class="d-block text-success mt-1">
-                                                    <i class="fas fa-plus-circle me-1"></i>
-                                                    +0.5 points
-                                                </small>
-                                            {% elif record.permission.status == 'rejected' %}
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-times me-1"></i>
-                                                    {{ record.permission.get_reason_display }} (Rejected)
-                                                </span>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
-                                                <i class="fas fa-{% if record.is_valid %}check{% else %}times{% endif %} me-1"></i>
-                                                {{ record.is_valid|yesno:"Present,Absent" }}
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if record.permission %}
-                                            <div class="d-flex flex-column">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-file-alt me-1"></i>
-                                                    {{ record.permission.explanation|truncatechars:50 }}
-                                                </small>
-                                                {% if record.permission.status != 'pending' %}
-                                                <div class="mt-2">
-                                                    <small class="text-muted d-block">
-                                                        <i class="fas fa-user-shield me-1"></i>
-                                                        By {{ record.permission.approved_by.get_full_name|default:record.permission.approved_by.username }}
-                                                    </small>
-                                                    {% if record.permission.admin_comment %}
-                                                    <div class="mt-1 p-2 {% if record.permission.status == 'approved' %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %} rounded">
-                                                        <small class="{% if record.permission.status == 'approved' %}text-success{% else %}text-danger{% endif %}">
-                                                            <i class="fas fa-comment me-1"></i>
-                                                            <strong>Admin Feedback:</strong>
-                                                            <span class="d-block mt-1">{{ record.permission.admin_comment }}</span>
-                                                        </small>
-                                                    </div>
-                                                    {% endif %}
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                        {% else %}
-                                            <span class="text-muted">Regular attendance</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge {% if record.is_valid %}bg-success{% else %}bg-danger{% endif %}">
-                                            <i class="fas fa-shield-alt me-1"></i>
-                                            {{ record.is_valid|yesno:"Valid,Invalid" }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">{{ record.ip_address }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-map-marker-alt text-muted me-2"></i>
-                                            {{ record.location|default:"Unknown" }}
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center py-4">
-                                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
-                                        <p class="text-muted mb-0">No attendance records found</p>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 20px;
+    }
+    .timeline-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .timeline-item:not(:last-child):before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 12px;
+        height: calc(100% + 8px);
+        width: 2px;
+        background-color: #dee2e6;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function exportToCSV() {
-    const table = document.querySelector('table');
-    const rows = Array.from(table.querySelectorAll('tr'));
-    
-    // Get headers
-    const headers = Array.from(rows[0].querySelectorAll('th'))
-        .map(header => header.textContent.trim());
-    
-    // Get data rows
-    const data = rows.slice(1).map(row => {
-        return Array.from(row.querySelectorAll('td'))
-            .map(cell => {
-                // Remove icons and get clean text
-                const text = cell.textContent.trim();
-                // Escape quotes and wrap in quotes if contains comma
-                return text.includes(',') ? `"${text}"` : text;
-            });
-    });
-    
-    // Combine headers and data
-    const csvContent = [
-        headers.join(','),
-        ...data.map(row => row.join(','))
-    ].join('\n');
-    
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'attendance_records.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// Add print styles
-const style = document.createElement('style');
-style.textContent = `
-    @media print {
-        .btn-group, .navbar, .footer {
-            display: none !important;
-        }
-        .card {
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .card-header {
-            background: none !important;
-            border-bottom: 2px solid #000 !important;
-        }
-        .table {
-            border-collapse: collapse !important;
-        }
-        .table td, .table th {
-            border: 1px solid #ddd !important;
-        }
-    }
-`;
-document.head.appendChild(style);
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
 </script>
+{% endblock %}
 {% endblock %} 
