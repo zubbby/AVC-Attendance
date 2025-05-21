@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from .user_profile import UserProfile
 import requests
 import json
-from .models import Session, AttendanceRecord, IPBlacklist
+from .models import Session, AttendanceRecord, IPBlacklist, Permission
 from django.utils import timezone
 import qrcode
 from io import BytesIO
@@ -18,6 +18,8 @@ import base64
 import secrets
 from .utils import get_client_ip, check_ip_security, validate_ip_address
 from django.db import IntegrityError
+from .forms import PermissionRequestForm, PermissionApprovalForm
+from django.core.paginator import Paginator
 
 def signup_view(request):
     if request.method == 'POST':
@@ -120,17 +122,31 @@ def dashboard(request):
     ).select_related('session').order_by('-marked_at')[:5]
 
     # --- Analytics Section ---
-    all_sessions = Session.objects.filter(allowed_users=request.user)
+    all_sessions = Session.objects.all()
     total_sessions = all_sessions.count()
     attended_records = AttendanceRecord.objects.filter(user=request.user)
     attended_sessions = sum(1 for record in attended_records if record.is_valid)
+    
+    # Add approved absent permissions to attended sessions
+    approved_absent_permissions = Permission.objects.filter(
+        user=request.user,
+        status='approved',
+        reason='absent'
+    ).count()
+    attended_sessions += approved_absent_permissions * 0.5  # Add 0.5 for each approved absent permission
+    
     attendance_percentage = int((attended_sessions / total_sessions) * 100) if total_sessions > 0 else 0
     is_eligible_for_sendforth = attendance_percentage >= 75
+    
+    # Get user's permission requests
+    permission_requests = Permission.objects.filter(user=request.user).select_related('session').order_by('-created_at')
+    
     attendance_stats = {
         'total_sessions': total_sessions,
         'attended_sessions': attended_sessions,
         'attendance_percentage': attendance_percentage,
         'is_eligible_for_sendforth': is_eligible_for_sendforth,
+        'permission_requests': permission_requests,
     }
     # --- End Analytics Section ---
 
@@ -251,3 +267,96 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
     return redirect('login')
+
+@login_required
+def request_permission(request):
+    if request.method == 'POST':
+        form = PermissionRequestForm(request.POST, user=request.user)
+        if form.is_valid():
+            permission = form.save(commit=False)
+            permission.user = request.user
+            permission.save()
+            messages.success(request, 'Permission request submitted successfully.')
+            return redirect('dashboard')
+    else:
+        form = PermissionRequestForm(user=request.user)
+    
+    return render(request, 'avc_app/request_permission.html', {
+        'form': form,
+        'title': 'Request Permission'
+    })
+
+@login_required
+def permission_list(request):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    # Get filter parameters
+    status = request.GET.get('status')
+    reason = request.GET.get('reason')
+    date = request.GET.get('date')
+    
+    # Start with base queryset
+    permissions = Permission.objects.all().select_related('user', 'session', 'approved_by')
+    
+    # Apply filters
+    if status:
+        permissions = permissions.filter(status=status)
+    if reason:
+        permissions = permissions.filter(reason=reason)
+    if date:
+        permissions = permissions.filter(created_at__date=date)
+    
+    # Order by created_at
+    permissions = permissions.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(permissions, 10)  # Show 10 permissions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get counts for filter options
+    status_counts = {
+        'pending': Permission.objects.filter(status='pending').count(),
+        'approved': Permission.objects.filter(status='approved').count(),
+        'rejected': Permission.objects.filter(status='rejected').count(),
+    }
+    
+    reason_counts = {
+        'late': Permission.objects.filter(reason='late').count(),
+        'absent': Permission.objects.filter(reason='absent').count(),
+    }
+    
+    context = {
+        'permissions': page_obj,
+        'page_obj': page_obj,  # For pagination template
+        'is_paginated': page_obj.has_other_pages(),
+        'status_counts': status_counts,
+        'reason_counts': reason_counts,
+        'title': 'Permission Requests',
+        'current_filters': {
+            'status': status,
+            'reason': reason,
+            'date': date,
+        }
+    }
+    return render(request, 'avc_app/permission_list.html', context)
+
+@login_required
+@require_http_methods(['POST'])
+def approve_permission(request, permission_id):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    permission = get_object_or_404(Permission, id=permission_id)
+    form = PermissionApprovalForm(request.POST, instance=permission)
+    
+    if form.is_valid():
+        permission = form.save(commit=False)
+        permission.approved_by = request.user
+        permission.save()
+        messages.success(request, f'Permission request {permission.get_status_display().lower()}.')
+    else:
+        messages.error(request, 'Invalid form submission.')
+    
+    return redirect('permission_list')
