@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-hwvgh(z$m47hn$ta=f!w^@8wukq=oh*-2l@x((888@k0kl*q((
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://avc-attendance.onrender.com']
+ALLOWED_HOSTS = ['avc-attendance.onrender.com']
 
 
 # Application definition
