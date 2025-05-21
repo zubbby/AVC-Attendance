@@ -1,1 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Request Attendance Permission</h2>
+        <p class="text-gray-500 mb-6">Submit a valid reason for missing a session. Approved requests may impact your attendance score positively.</p>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-400 text-red-700 p-4 rounded-lg">
+                <strong>Oops! Something went wrong:</strong>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ field|capfirst }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Session Field -->
+            <div>
+                <label for="id_session" class="block text-sm font-medium text-gray-700">Select Session</label>
+                <select name="session" id="id_session" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    {% for session in form.fields.session.queryset %}
+                        <option value="{{ session.id }}">{{ session.name }} — {{ session.date|date:"F j, Y, g:i a" }}</option>
+                    {% empty %}
+                        <option disabled>No sessions available for request.</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Reason Field -->
+            <div>
+                <label for="id_reason" class="block text-sm font-medium text-gray-700">Reason for Request</label>
+                <textarea name="reason" id="id_reason" rows="4" placeholder="Explain your reason clearly..." class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">{{ form.reason.value }}</textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4">
+                <button type="submit" class="inline-flex items-center justify-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow">
+                    Submit Request
+                </button>
+            </div>
+        </form>
+
+        <!-- Info Box -->
+        <div class="mt-10 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded-md text-sm">
+            <strong>Note:</strong> You can only request permission for sessions you haven't marked attendance for. Each request is reviewed by an admin and may count partially toward your attendance.
+        </div>
+    </div>
+</div>
+{% endblock %}
  
