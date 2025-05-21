@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-hwvgh(z$m47hn$ta=f!w^@8wukq=oh*-2l@x((888@k0kl*q(('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['avc-attendance.onrender.com']
 
@@ -57,10 +57,7 @@ ROOT_URLCONF = 'AVC_ATT.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',
-            BASE_DIR / 'templates' / 'errors',  # Add error templates directory
-        ],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -98,8 +95,6 @@ DATABASES = {
         'USE_TZ': True,
     }
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -203,3 +198,9 @@ LOGGING = {
         },
     },
 }
+
+# Custom error pages
+handler404 = 'avc_app.views.handler404'
+handler500 = 'avc_app.views.handler500'
+handler403 = 'avc_app.views.handler403'
+handler400 = 'avc_app.views.handler400'
