@@ -278,11 +278,38 @@ def request_permission(request):
     if request.method == 'POST':
         form = PermissionRequestForm(request.POST, user=request.user)
         if form.is_valid():
-            permission = form.save(commit=False)
-            permission.user = request.user
-            permission.save()
-            messages.success(request, 'Permission request submitted successfully.')
-            return redirect('dashboard')
+            # Check if user already has a permission request for this session
+            session = form.cleaned_data['session']
+            existing_permission = Permission.objects.filter(
+                user=request.user,
+                session=session
+            ).first()
+            
+            if existing_permission:
+                if existing_permission.status == 'pending':
+                    messages.warning(request, f'You already have a pending permission request for this session. Please wait for it to be reviewed.')
+                elif existing_permission.status == 'approved':
+                    messages.warning(request, f'You already have an approved permission request for this session.')
+                elif existing_permission.status == 'rejected':
+                    # Allow new request if previous was rejected
+                    try:
+                        permission = form.save(commit=False)
+                        permission.user = request.user
+                        permission.save()
+                        messages.success(request, 'Permission request submitted successfully.')
+                        return redirect('dashboard')
+                    except IntegrityError:
+                        messages.error(request, 'An error occurred while submitting your request. Please try again.')
+                return redirect('request_permission')
+            
+            try:
+                permission = form.save(commit=False)
+                permission.user = request.user
+                permission.save()
+                messages.success(request, 'Permission request submitted successfully.')
+                return redirect('dashboard')
+            except IntegrityError:
+                messages.error(request, 'An error occurred while submitting your request. Please try again.')
     else:
         form = PermissionRequestForm(user=request.user)
     
