@@ -21,22 +21,26 @@ class PermissionRequestForm(forms.ModelForm):
                 end_time__gt=timezone.now()
             )
 
-class PermissionApprovalForm(forms.Form):
-    status = forms.ChoiceField(
-        choices=[('approved', 'Approve'), ('rejected', 'Reject')],
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    admin_comment = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Please provide a reason for your decision...'
-        }),
-        required=True,
-        min_length=5,
-        max_length=500,
-        help_text='Please provide a clear explanation for your decision (5-500 characters).'
-    )
+class PermissionApprovalForm(forms.ModelForm):
+    class Meta:
+        model = Permission
+        fields = ['status', 'admin_comment']
+        widgets = {
+            'status': forms.Select(
+                choices=[('approved', 'Approve'), ('rejected', 'Reject')],
+                attrs={'class': 'form-select'}
+            ),
+            'admin_comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Please provide a reason for your decision...'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['admin_comment'].required = True
+        self.fields['admin_comment'].help_text = 'Please provide a clear explanation for your decision (5-500 characters).'
 
     def clean_admin_comment(self):
         comment = self.cleaned_data['admin_comment']
