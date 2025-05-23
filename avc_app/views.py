@@ -278,18 +278,6 @@ def request_permission(request):
     if request.method == 'POST':
         form = PermissionRequestForm(request.POST, user=request.user)
         if form.is_valid():
-            # Check if request is at least 30 minutes before session
-            session = form.cleaned_data['session']
-            now = timezone.now()
-            min_time_before = session.start_time - timezone.timedelta(minutes=30)
-            
-            if now > min_time_before:
-                messages.error(request, 'Permission requests must be submitted at least 30 minutes before the session.')
-                return render(request, 'avc_app/request_permission.html', {
-                    'form': form,
-                    'title': 'Request Permission'
-                })
-            
             permission = form.save(commit=False)
             permission.user = request.user
             permission.save()
