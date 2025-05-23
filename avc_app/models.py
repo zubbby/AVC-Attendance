@@ -87,10 +87,10 @@ class Permission(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_permissions')
     approved_at = models.DateTimeField(null=True, blank=True)
+    admin_comment = models.TextField(blank=True, null=True, help_text="Admin's response to the permission request")
 
     class Meta:
         ordering = ['-created_at']
-        unique_together = ['user', 'session']  # One permission request per session per user
 
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username} - {self.session.name} ({self.get_reason_display()})"
