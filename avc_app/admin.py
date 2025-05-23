@@ -34,7 +34,7 @@ class PermissionAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('User Information', {
-            'fields': ('user', 'avc_id')
+            'fields': ('user',)
         }),
         ('Request Details', {
             'fields': ('session', 'reason', 'explanation')
@@ -49,7 +49,7 @@ class PermissionAdmin(admin.ModelAdmin):
     )
 
     def avc_id(self, obj):
-        return obj.user.profile.avc_id
+        return obj.user.profile.avc_id if hasattr(obj.user, 'profile') else 'N/A'
     avc_id.short_description = 'AVC ID'
     avc_id.admin_order_field = 'user__profile__avc_id'
 
