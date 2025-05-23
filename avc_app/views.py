@@ -293,44 +293,54 @@ def request_permission(request):
 
 @login_required
 def permission_list(request):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-    
     # Get filter parameters
     status = request.GET.get('status')
     reason = request.GET.get('reason')
     date = request.GET.get('date')
-    
-    # Start with base queryset
-    permissions = Permission.objects.all().select_related('user', 'session', 'approved_by')
-    
+
+    # Base queryset - staff see all, regular users see only their own
+    if request.user.is_staff:
+        permissions = Permission.objects.all()
+    else:
+        permissions = Permission.objects.filter(user=request.user)
+
     # Apply filters
     if status:
         permissions = permissions.filter(status=status)
     if reason:
         permissions = permissions.filter(reason=reason)
     if date:
-        permissions = permissions.filter(created_at__date=date)
-    
-    # Order by created_at
-    permissions = permissions.order_by('-created_at')
-    
+        permissions = permissions.filter(session__start_time__date=date)
+
+    # Order by most recent first
+    permissions = permissions.select_related('user', 'session', 'approved_by').order_by('-created_at')
+
     # Pagination
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get counts for filter options
-    status_counts = {
-        'pending': Permission.objects.filter(status='pending').count(),
-        'approved': Permission.objects.filter(status='approved').count(),
-        'rejected': Permission.objects.filter(status='rejected').count(),
-    }
-    
-    reason_counts = {
-        'late': Permission.objects.filter(reason='late').count(),
-        'absent': Permission.objects.filter(reason='absent').count(),
-    }
+    # Get counts for filter options - only for staff
+    if request.user.is_staff:
+        status_counts = {
+            'pending': Permission.objects.filter(status='pending').count(),
+            'approved': Permission.objects.filter(status='approved').count(),
+            'rejected': Permission.objects.filter(status='rejected').count(),
+        }
+        reason_counts = {
+            'late': Permission.objects.filter(reason='late').count(),
+            'absent': Permission.objects.filter(reason='absent').count(),
+        }
+    else:
+        status_counts = {
+            'pending': permissions.filter(status='pending').count(),
+            'approved': permissions.filter(status='approved').count(),
+            'rejected': permissions.filter(status='rejected').count(),
+        }
+        reason_counts = {
+            'late': permissions.filter(reason='late').count(),
+            'absent': permissions.filter(reason='absent').count(),
+        }
     
     context = {
         'permissions': page_obj,
@@ -338,7 +348,7 @@ def permission_list(request):
         'is_paginated': page_obj.has_other_pages(),
         'status_counts': status_counts,
         'reason_counts': reason_counts,
-        'title': 'Permission Requests',
+        'title': 'My Permission Requests' if not request.user.is_staff else 'Permission Requests',
         'current_filters': {
             'status': status,
             'reason': reason,
