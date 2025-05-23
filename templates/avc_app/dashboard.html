@@ -185,12 +185,20 @@
                     <div class="list-group">
                         {% for permission in attendance_stats.permission_requests|slice:":3" %}
                         <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1">{{ permission.session.title }}</h6>
                                     <small class="text-muted">
                                         {{ permission.created_at|date:"F d, Y" }} - {{ permission.get_reason_display }}
                                     </small>
+                                    {% if permission.admin_comment %}
+                                    <div class="mt-2 p-2 {% if permission.status == 'approved' %}bg-success bg-opacity-10{% elif permission.status == 'rejected' %}bg-danger bg-opacity-10{% else %}bg-light{% endif %} rounded">
+                                        <small class="{% if permission.status == 'approved' %}text-success{% elif permission.status == 'rejected' %}text-danger{% endif %}">
+                                            <i class="fas fa-comment me-1"></i>
+                                            {{ permission.admin_comment }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <span class="badge {% if permission.status == 'pending' %}bg-warning{% elif permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
                                     {{ permission.get_status_display }}
