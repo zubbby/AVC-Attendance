@@ -5,7 +5,8 @@
 <div class="container mt-4">
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between">
-            <h4 class="mb-0">Permission Requests</h4>
+            <h4 class="mb-0">{{ title }}</h4>
+            {% if user.is_staff %}
             <div class="btn-group">
                 <a href="{% url 'export_permissions_csv' %}" class="btn btn-outline-primary">
                     <i class="fas fa-file-csv me-1"></i> Export Permissions
@@ -14,6 +15,7 @@
                     <i class="fas fa-file-csv me-1"></i> Export Attendance
                 </a>
             </div>
+            {% endif %}
         </div>
 
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -49,7 +51,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Date Range</label>
+                        <label class="form-label">Date</label>
                         <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
@@ -66,18 +68,23 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            {% if user.is_staff %}
                             <th>User</th>
+                            {% endif %}
                             <th>Session</th>
                             <th>Reason</th>
                             <th>Explanation</th>
                             <th>Status</th>
                             <th>Timeline</th>
+                            {% if user.is_staff %}
                             <th>Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for permission in permissions %}
                         <tr>
+                            {% if user.is_staff %}
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle bg-primary text-white me-2">
@@ -89,6 +96,7 @@
                                     </div>
                                 </div>
                             </td>
+                            {% endif %}
                             <td>
                                 <div class="d-flex flex-column">
                                     <span class="fw-bold">{{ permission.session.name }}</span>
@@ -116,9 +124,11 @@
                                 </span>
                                 {% if permission.status != 'pending' %}
                                 <div class="mt-1">
+                                    {% if user.is_staff %}
                                     <small class="text-muted d-block">
                                         by {{ permission.approved_by.get_full_name|default:permission.approved_by.username }}
                                     </small>
+                                    {% endif %}
                                     {% if permission.admin_comment %}
                                     <small class="{% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} d-block mt-1">
                                         <i class="fas fa-comment me-1"></i>
@@ -136,6 +146,7 @@
                                     {% endif %}
                                 </div>
                             </td>
+                            {% if user.is_staff %}
                             <td>
                                 {% if permission.status == 'pending' %}
                                 <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#approvalModal{{ permission.id }}">
@@ -147,10 +158,11 @@
                                 </button>
                                 {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
 
-                        <!-- Approval Modal -->
-                        {% if permission.status == 'pending' %}
+                        <!-- Approval Modal - Only for staff -->
+                        {% if user.is_staff and permission.status == 'pending' %}
                         <div class="modal fade" id="approvalModal{{ permission.id }}" tabindex="-1" aria-labelledby="approvalModalLabel{{ permission.id }}" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
