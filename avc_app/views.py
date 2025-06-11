@@ -19,7 +19,7 @@ import secrets
 from .utils import get_client_ip, check_ip_security, validate_ip_address
 from django.db import IntegrityError
 from .forms import PermissionRequestForm, PermissionApprovalForm
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 from datetime import datetime
 from django.db.models import Count
