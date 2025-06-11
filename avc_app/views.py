@@ -391,15 +391,54 @@ def approve_permission(request, permission_id):
         return HttpResponseForbidden()
     
     permission = get_object_or_404(Permission, id=permission_id)
+    
+    # Check if permission is already processed
+    if permission.status != 'pending':
+        messages.warning(request, 'This permission request has already been processed.')
+        return redirect('permission_list')
+    
     form = PermissionApprovalForm(request.POST, instance=permission)
     
     if form.is_valid():
         permission = form.save(commit=False)
         permission.approved_by = request.user
+        permission.approved_at = timezone.now()
         permission.save()
-        messages.success(request, f'Permission request {permission.get_status_display().lower()}.')
+        
+        # Add appropriate message based on status
+        if permission.status == 'approved':
+            messages.success(request, f'Permission request approved for {permission.user.get_full_name() or permission.user.username}.')
+        else:
+            messages.info(request, f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.')
     else:
-        messages.error(request, 'Invalid form submission.')
+        messages.error(request, 'Invalid form submission. Please provide a reason for your decision.')
+    
+    return redirect('permission_list')
+
+@login_required
+@require_http_methods(['POST'])
+def reject_permission(request, permission_id):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    permission = get_object_or_404(Permission, id=permission_id)
+    
+    # Check if permission is already processed
+    if permission.status != 'pending':
+        messages.warning(request, 'This permission request has already been processed.')
+        return redirect('permission_list')
+    
+    form = PermissionApprovalForm(request.POST, instance=permission)
+    
+    if form.is_valid():
+        permission = form.save(commit=False)
+        permission.status = 'rejected'  # Force status to rejected
+        permission.approved_by = request.user
+        permission.approved_at = timezone.now()
+        permission.save()
+        messages.info(request, f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.')
+    else:
+        messages.error(request, 'Invalid form submission. Please provide a reason for your decision.')
     
     return redirect('permission_list')
 
