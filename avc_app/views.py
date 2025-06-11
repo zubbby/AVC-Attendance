@@ -22,6 +22,21 @@ from .forms import PermissionRequestForm, PermissionApprovalForm
 from django.core.paginator import Paginator
 import csv
 from datetime import datetime
+from django.db.models import Count
+from django.db.utils import IntegrityError as DjangoIntegrityError
+from django.db.models.functions import Cast
+from django.db.models import Q
+from django.db.models import F
+from django.db.models import Case
+from django.db.models import When
+from django.db.models import Value
+from django.db.models.functions import Coalesce
+from django.db.models import Count
+from django.db.models import PageNotAnInteger
+from django.db.models import EmptyPage
+import logging
+
+logger = logging.getLogger(__name__)
 
 def signup_view(request):
     if request.method == 'POST':
@@ -326,10 +341,12 @@ def permission_list(request):
     date = request.GET.get('date')
 
     # Base queryset - staff see all, regular users see only their own
-    if request.user.is_staff:
-        permissions = Permission.objects.all()
-    else:
-        permissions = Permission.objects.filter(user=request.user)
+    permissions = Permission.objects.select_related(
+        'user', 'user__profile', 'session', 'approved_by'
+    )
+    
+    if not request.user.is_staff:
+        permissions = permissions.filter(user=request.user)
 
     # Apply filters
     if status:
@@ -337,41 +354,40 @@ def permission_list(request):
     if reason:
         permissions = permissions.filter(reason=reason)
     if date:
-        permissions = permissions.filter(session__start_time__date=date)
+        try:
+            date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+            permissions = permissions.filter(session__start_time__date=date_obj)
+        except ValueError:
+            messages.error(request, 'Invalid date format.')
 
     # Order by most recent first
-    permissions = permissions.select_related('user', 'session', 'approved_by').order_by('-created_at')
+    permissions = permissions.order_by('-created_at')
 
     # Pagination
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.get_page(1)
     
     # Get counts for filter options - only for staff
     if request.user.is_staff:
-        status_counts = {
-            'pending': Permission.objects.filter(status='pending').count(),
-            'approved': Permission.objects.filter(status='approved').count(),
-            'rejected': Permission.objects.filter(status='rejected').count(),
-        }
-        reason_counts = {
-            'late': Permission.objects.filter(reason='late').count(),
-            'absent': Permission.objects.filter(reason='absent').count(),
-        }
+        status_counts = Permission.objects.values('status').annotate(count=Count('id'))
+        reason_counts = Permission.objects.values('reason').annotate(count=Count('id'))
+        
+        status_counts = {item['status']: item['count'] for item in status_counts}
+        reason_counts = {item['reason']: item['count'] for item in reason_counts}
     else:
-        status_counts = {
-            'pending': permissions.filter(status='pending').count(),
-            'approved': permissions.filter(status='approved').count(),
-            'rejected': permissions.filter(status='rejected').count(),
-        }
-        reason_counts = {
-            'late': permissions.filter(reason='late').count(),
-            'absent': permissions.filter(reason='absent').count(),
-        }
+        status_counts = permissions.values('status').annotate(count=Count('id'))
+        reason_counts = permissions.values('reason').annotate(count=Count('id'))
+        
+        status_counts = {item['status']: item['count'] for item in status_counts}
+        reason_counts = {item['reason']: item['count'] for item in reason_counts}
     
     context = {
         'permissions': page_obj,
-        'page_obj': page_obj,  # For pagination template
+        'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
         'status_counts': status_counts,
         'reason_counts': reason_counts,
@@ -390,7 +406,10 @@ def approve_permission(request, permission_id):
     if not request.user.is_staff:
         return HttpResponseForbidden()
     
-    permission = get_object_or_404(Permission, id=permission_id)
+    permission = get_object_or_404(
+        Permission.objects.select_related('user', 'session'),
+        id=permission_id
+    )
     
     # Check if permission is already processed
     if permission.status != 'pending':
@@ -400,18 +419,30 @@ def approve_permission(request, permission_id):
     form = PermissionApprovalForm(request.POST, instance=permission)
     
     if form.is_valid():
-        permission = form.save(commit=False)
-        permission.approved_by = request.user
-        permission.approved_at = timezone.now()
-        permission.save()
-        
-        # Add appropriate message based on status
-        if permission.status == 'approved':
-            messages.success(request, f'Permission request approved for {permission.user.get_full_name() or permission.user.username}.')
-        else:
-            messages.info(request, f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.')
+        try:
+            with transaction.atomic():
+                permission = form.save(commit=False)
+                permission.approved_by = request.user
+                permission.approved_at = timezone.now()
+                permission.save()
+                
+                # Add appropriate message based on status
+                if permission.status == 'approved':
+                    messages.success(
+                        request,
+                        f'Permission request approved for {permission.user.get_full_name() or permission.user.username}.'
+                    )
+                else:
+                    messages.info(
+                        request,
+                        f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.'
+                    )
+        except Exception as e:
+            messages.error(request, f'An error occurred while processing the request: {str(e)}')
     else:
-        messages.error(request, 'Invalid form submission. Please provide a reason for your decision.')
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f'{field}: {error}')
     
     return redirect('permission_list')
 
@@ -421,7 +452,10 @@ def reject_permission(request, permission_id):
     if not request.user.is_staff:
         return HttpResponseForbidden()
     
-    permission = get_object_or_404(Permission, id=permission_id)
+    permission = get_object_or_404(
+        Permission.objects.select_related('user', 'session'),
+        id=permission_id
+    )
     
     # Check if permission is already processed
     if permission.status != 'pending':
@@ -431,14 +465,24 @@ def reject_permission(request, permission_id):
     form = PermissionApprovalForm(request.POST, instance=permission)
     
     if form.is_valid():
-        permission = form.save(commit=False)
-        permission.status = 'rejected'  # Force status to rejected
-        permission.approved_by = request.user
-        permission.approved_at = timezone.now()
-        permission.save()
-        messages.info(request, f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.')
+        try:
+            with transaction.atomic():
+                permission = form.save(commit=False)
+                permission.status = 'rejected'  # Force status to rejected
+                permission.approved_by = request.user
+                permission.approved_at = timezone.now()
+                permission.save()
+                
+                messages.info(
+                    request,
+                    f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.'
+                )
+        except Exception as e:
+            messages.error(request, f'An error occurred while processing the request: {str(e)}')
     else:
-        messages.error(request, 'Invalid form submission. Please provide a reason for your decision.')
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f'{field}: {error}')
     
     return redirect('permission_list')
 
@@ -448,16 +492,20 @@ def export_permissions_csv(request):
         return HttpResponseForbidden()
     
     # Create the HttpResponse object with CSV header
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="permission_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="permission_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        }
+    )
     
-    # Create CSV writer
-    writer = csv.writer(response)
+    # Create CSV writer with proper encoding
+    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
     
     # Write headers
     writer.writerow([
         'Request ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
-        'Reason', 'Explanation', 'Status', 'Comment', 'Requested At',
+        'Reason', 'Explanation', 'Status', 'Admin Comment', 'Requested At',
         'Processed By', 'Processed At'
     ])
     
@@ -468,20 +516,25 @@ def export_permissions_csv(request):
     
     # Write data rows
     for perm in permissions:
-        writer.writerow([
-            perm.id,
-            perm.user.get_full_name() or perm.user.username,
-            perm.user.profile.avc_id,
-            perm.session.name,
-            perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
-            perm.get_reason_display(),
-            perm.explanation,
-            perm.get_status_display(),
-            getattr(perm, 'comment', ''),  # Use getattr to safely access the comment field
-            perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            perm.approved_by.get_full_name() if perm.approved_by else '',
-            perm.updated_at.strftime('%Y-%m-%d %H:%M:%S') if perm.status != 'pending' else ''
-        ])
+        try:
+            writer.writerow([
+                perm.id,
+                perm.user.get_full_name() or perm.user.username,
+                perm.user.profile.avc_id,
+                perm.session.name,
+                perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
+                perm.get_reason_display(),
+                perm.explanation,
+                perm.get_status_display(),
+                perm.admin_comment or '',
+                perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                perm.approved_by.get_full_name() if perm.approved_by else '',
+                perm.approved_at.strftime('%Y-%m-%d %H:%M:%S') if perm.approved_at else ''
+            ])
+        except Exception as e:
+            # Log the error but continue processing
+            logger.error(f'Error exporting permission {perm.id}: {str(e)}')
+            continue
     
     return response
 
@@ -491,11 +544,15 @@ def export_attendance_csv(request):
         return HttpResponseForbidden()
     
     # Create the HttpResponse object with CSV header
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="attendance_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="attendance_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        }
+    )
     
-    # Create CSV writer
-    writer = csv.writer(response)
+    # Create CSV writer with proper encoding
+    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
     
     # Write headers
     writer.writerow([
@@ -504,29 +561,34 @@ def export_attendance_csv(request):
         'Marked At', 'IP Address', 'Location', 'Valid'
     ])
     
-    # Get all attendance records with related data - fixed select_related
+    # Get all attendance records with related data
     records = AttendanceRecord.objects.select_related(
         'user', 'user__profile', 'session'
-    ).prefetch_related('permission').order_by('-marked_at')
+    ).prefetch_related('permission_set').order_by('-marked_at')
     
     # Write data rows
     for record in records:
-        permission = record.permission_set.first()  # Get the first permission if exists
-        writer.writerow([
-            record.id,
-            record.user.get_full_name() or record.user.username,
-            record.user.profile.avc_id,
-            record.session.name,
-            record.session.start_time.strftime('%Y-%m-%d %H:%M'),
-            'Present' if record.is_valid else 'Absent',
-            permission.get_status_display() if permission else 'N/A',
-            permission.get_reason_display() if permission else 'N/A',
-            permission.admin_comment if permission and permission.admin_comment else '',
-            record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
-            record.ip_address,
-            record.location or 'Unknown',
-            'Yes' if record.is_valid else 'No'
-        ])
+        try:
+            permission = record.permission_set.first()  # Get the first permission if exists
+            writer.writerow([
+                record.id,
+                record.user.get_full_name() or record.user.username,
+                record.user.profile.avc_id,
+                record.session.name,
+                record.session.start_time.strftime('%Y-%m-%d %H:%M'),
+                'Present' if record.is_valid else 'Absent',
+                permission.get_status_display() if permission else 'N/A',
+                permission.get_reason_display() if permission else 'N/A',
+                permission.admin_comment if permission and permission.admin_comment else '',
+                record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
+                record.ip_address,
+                record.location or 'Unknown',
+                'Yes' if record.is_valid else 'No'
+            ])
+        except Exception as e:
+            # Log the error but continue processing
+            logger.error(f'Error exporting attendance record {record.id}: {str(e)}')
+            continue
     
     return response
 
