@@ -3,16 +3,27 @@
 
 {% block content %}
 <div class="container mt-4">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between">
             <h4 class="mb-0">{{ title }}</h4>
             {% if user.is_staff %}
-            <div class="btn-group">
-                <a href="{% url 'export_permissions_csv' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-file-csv me-1"></i> Export Permissions
+            <div class="btn-group" role="group" aria-label="Export options">
+                <a href="{% url 'export_permissions_csv' %}" class="btn btn-outline-primary" role="button">
+                    <i class="fas fa-file-csv me-1" aria-hidden="true"></i> Export Permissions
                 </a>
-                <a href="{% url 'export_attendance_csv' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-file-csv me-1"></i> Export Attendance
+                <a href="{% url 'export_attendance_csv' %}" class="btn btn-outline-primary" role="button">
+                    <i class="fas fa-file-csv me-1" aria-hidden="true"></i> Export Attendance
                 </a>
             </div>
             {% endif %}
@@ -20,11 +31,15 @@
 
         <div class="card-header d-flex justify-content-between align-items-center">
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-                    <i class="fas fa-filter me-1"></i>Filter
+                <button class="btn btn-outline-primary btn-sm" type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#filterCollapse"
+                        aria-expanded="false"
+                        aria-controls="filterCollapse">
+                    <i class="fas fa-filter me-1" aria-hidden="true"></i>Filter
                 </button>
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm" role="button">
+                    <i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Back to Dashboard
                 </a>
             </div>
         </div>
@@ -32,10 +47,10 @@
         <!-- Filter Section -->
         <div class="collapse" id="filterCollapse">
             <div class="card-body border-bottom">
-                <form method="get" class="row g-3">
+                <form method="get" class="row g-3" aria-label="Filter permissions">
                     <div class="col-md-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-select">
+                        <label for="statusFilter" class="form-label">Status</label>
+                        <select name="status" id="statusFilter" class="form-select">
                             <option value="">All Statuses</option>
                             <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
                             <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
@@ -43,20 +58,22 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Reason</label>
-                        <select name="reason" class="form-select">
+                        <label for="reasonFilter" class="form-label">Reason</label>
+                        <select name="reason" id="reasonFilter" class="form-select">
                             <option value="">All Reasons</option>
                             <option value="late" {% if request.GET.reason == 'late' %}selected{% endif %}>Late</option>
                             <option value="absent" {% if request.GET.reason == 'absent' %}selected{% endif %}>Absent</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                        <label for="dateFilter" class="form-label">Date</label>
+                        <input type="date" name="date" id="dateFilter" class="form-control" 
+                               value="{{ request.GET.date }}"
+                               aria-label="Filter by date">
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
-                        <a href="{% url 'permission_list' %}" class="btn btn-outline-secondary">Clear</a>
+                        <a href="{% url 'permission_list' %}" class="btn btn-outline-secondary" role="button">Clear</a>
                     </div>
                 </form>
             </div>
@@ -65,19 +82,19 @@
         <div class="card-body">
             {% if permissions %}
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" aria-label="Permission requests">
                     <thead>
                         <tr>
                             {% if user.is_staff %}
-                            <th>User</th>
+                            <th scope="col">User</th>
                             {% endif %}
-                            <th>Session</th>
-                            <th>Reason</th>
-                            <th>Explanation</th>
-                            <th>Status</th>
-                            <th>Timeline</th>
+                            <th scope="col">Session</th>
+                            <th scope="col">Reason</th>
+                            <th scope="col">Explanation</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Timeline</th>
                             {% if user.is_staff %}
-                            <th>Actions</th>
+                            <th scope="col">Actions</th>
                             {% endif %}
                         </tr>
                     </thead>
@@ -87,7 +104,7 @@
                             {% if user.is_staff %}
                             <td>
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-circle bg-primary text-white me-2">
+                                    <div class="avatar-circle bg-primary text-white me-2" aria-hidden="true">
                                         {{ permission.user.get_full_name|default:permission.user.username|make_list|first|upper }}
                                     </div>
                                     <div>
@@ -106,7 +123,8 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge {% if permission.reason == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
+                                <span class="badge {% if permission.reason == 'late' %}bg-warning{% else %}bg-danger{% endif %}"
+                                      aria-label="Permission reason: {{ permission.get_reason_display }}">
                                     {{ permission.get_reason_display }}
                                 </span>
                                 {% if permission.reason == 'absent' %}
@@ -114,12 +132,18 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip" title="{{ permission.explanation }}">
+                                <button type="button" 
+                                        class="btn btn-link btn-sm p-0" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top"
+                                        title="{{ permission.explanation }}"
+                                        aria-label="View explanation">
                                     {{ permission.explanation|truncatechars:50 }}
                                 </button>
                             </td>
                             <td>
-                                <span class="badge {% if permission.status == 'pending' %}bg-warning{% elif permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                <span class="badge {% if permission.status == 'pending' %}bg-warning{% elif permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}"
+                                      aria-label="Permission status: {{ permission.get_status_display }}">
                                     {{ permission.get_status_display }}
                                 </span>
                                 {% if permission.status != 'pending' %}
@@ -131,7 +155,7 @@
                                     {% endif %}
                                     {% if permission.admin_comment %}
                                     <small class="{% if permission.status == 'approved' %}text-success{% else %}text-danger{% endif %} d-block mt-1">
-                                        <i class="fas fa-comment me-1"></i>
+                                        <i class="fas fa-comment me-1" aria-hidden="true"></i>
                                         {{ permission.admin_comment }}
                                     </small>
                                     {% endif %}
@@ -149,12 +173,20 @@
                             {% if user.is_staff %}
                             <td>
                                 {% if permission.status == 'pending' %}
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#approvalModal{{ permission.id }}">
-                                    <i class="fas fa-check me-1"></i>Review
+                                <button type="button" 
+                                        class="btn btn-sm btn-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#approvalModal{{ permission.id }}"
+                                        aria-label="Review permission request">
+                                    <i class="fas fa-check me-1" aria-hidden="true"></i>Review
                                 </button>
                                 {% else %}
-                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ permission.id }}">
-                                    <i class="fas fa-eye me-1"></i>Details
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-secondary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#detailsModal{{ permission.id }}"
+                                        aria-label="View permission details">
+                                    <i class="fas fa-eye me-1" aria-hidden="true"></i>Details
                                 </button>
                                 {% endif %}
                             </td>
@@ -163,18 +195,27 @@
 
                         <!-- Approval Modal -->
                         {% if permission.status == 'pending' %}
-                        <div class="modal fade" id="approvalModal{{ permission.id }}" tabindex="-1" aria-labelledby="approvalModalLabel{{ permission.id }}" aria-hidden="true">
+                        <div class="modal fade" 
+                             id="approvalModal{{ permission.id }}" 
+                             tabindex="-1" 
+                             aria-labelledby="approvalModalLabel{{ permission.id }}" 
+                             aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <form method="post" action="{% url 'approve_permission' permission.id %}">
+                                    <form method="post" 
+                                          action="{% url 'approve_permission' permission.id %}"
+                                          aria-label="Permission approval form">
                                         {% csrf_token %}
                                         <div class="modal-header">
                                             <h5 class="modal-title" id="approvalModalLabel{{ permission.id }}">Review Permission Request</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            <button type="button" 
+                                                    class="btn-close" 
+                                                    data-bs-dismiss="modal" 
+                                                    aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-2"></i>
+                                            <div class="alert alert-info" role="alert">
+                                                <i class="fas fa-info-circle me-2" aria-hidden="true"></i>
                                                 {% if permission.reason == 'absent' %}
                                                 Approving this request will add 0.5 to the user's attendance count.
                                                 {% else %}
@@ -199,21 +240,33 @@
                                                 <small class="text-muted">{{ permission.explanation }}</small>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Decision</label>
-                                                <select name="status" class="form-select" required>
+                                                <label for="status{{ permission.id }}" class="form-label">Decision</label>
+                                                <select name="status" 
+                                                        id="status{{ permission.id }}" 
+                                                        class="form-select" 
+                                                        required
+                                                        aria-label="Select decision">
                                                     <option value="approved">Approve</option>
                                                     <option value="rejected">Reject</option>
                                                 </select>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Admin Comment</label>
-                                                <textarea name="admin_comment" class="form-control" rows="3" required 
-                                                    placeholder="Please provide a reason for your decision..."></textarea>
+                                                <label for="adminComment{{ permission.id }}" class="form-label">Admin Comment</label>
+                                                <textarea name="admin_comment" 
+                                                          id="adminComment{{ permission.id }}"
+                                                          class="form-control" 
+                                                          rows="3" 
+                                                          required 
+                                                          placeholder="Please provide a reason for your decision..."
+                                                          aria-label="Admin comment"></textarea>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            <button type="submit" class="btn btn-primary">Submit Decision</button>
+                                            <button type="button" 
+                                                    class="btn btn-secondary" 
+                                                    data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" 
+                                                    class="btn btn-primary">Submit Decision</button>
                                         </div>
                                     </form>
                                 </div>
@@ -223,17 +276,24 @@
 
                         <!-- Details Modal -->
                         {% if permission.status != 'pending' %}
-                        <div class="modal fade" id="detailsModal{{ permission.id }}" tabindex="-1" aria-labelledby="detailsModalLabel{{ permission.id }}" aria-hidden="true">
+                        <div class="modal fade" 
+                             id="detailsModal{{ permission.id }}" 
+                             tabindex="-1" 
+                             aria-labelledby="detailsModalLabel{{ permission.id }}" 
+                             aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title" id="detailsModalLabel{{ permission.id }}">Permission Request Details</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" 
+                                                class="btn-close" 
+                                                data-bs-dismiss="modal" 
+                                                aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <div class="timeline">
-                                            <div class="timeline-item">
-                                                <div class="timeline-marker bg-primary"></div>
+                                        <div class="timeline" role="list">
+                                            <div class="timeline-item" role="listitem">
+                                                <div class="timeline-marker bg-primary" aria-hidden="true"></div>
                                                 <div class="timeline-content">
                                                     <h6 class="mb-1">Request Submitted</h6>
                                                     <p class="mb-0 text-muted">{{ permission.created_at|date:"M d, Y H:i" }}</p>
@@ -243,8 +303,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="timeline-item">
-                                                <div class="timeline-marker {% if permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                                            <div class="timeline-item" role="listitem">
+                                                <div class="timeline-marker {% if permission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}" 
+                                                     aria-hidden="true"></div>
                                                 <div class="timeline-content">
                                                     <h6 class="mb-1">Request {{ permission.get_status_display }}</h6>
                                                     <p class="mb-0 text-muted">{{ permission.updated_at|date:"M d, Y H:i" }}</p>
@@ -262,7 +323,9 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="button" 
+                                                class="btn btn-secondary" 
+                                                data-bs-dismiss="modal">Close</button>
                                     </div>
                                 </div>
                             </div>
@@ -275,31 +338,45 @@
 
             <!-- Pagination -->
             {% if is_paginated %}
-            <nav aria-label="Page navigation" class="mt-4">
+            <nav aria-label="Permission list pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">First</a>
+                        <a class="page-link" 
+                           href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="First page">First</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                        <a class="page-link" 
+                           href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="Previous page">Previous</a>
                     </li>
                     {% endif %}
 
                     {% for num in page_obj.paginator.page_range %}
                         {% if page_obj.number == num %}
-                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                        <li class="page-item active">
+                            <span class="page-link" aria-current="page">{{ num }}</span>
+                        </li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        <li class="page-item">
+                            <a class="page-link" 
+                               href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                               aria-label="Page {{ num }}">{{ num }}</a>
+                        </li>
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                        <a class="page-link" 
+                           href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="Next page">Next</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last</a>
+                        <a class="page-link" 
+                           href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           aria-label="Last page">Last</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -307,7 +384,7 @@
             {% endif %}
             {% else %}
             <div class="text-center py-5">
-                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <i class="fas fa-inbox fa-3x text-muted mb-3" aria-hidden="true"></i>
                 <h5>No Permission Requests Found</h5>
                 <p class="text-muted">There are no permission requests matching your criteria.</p>
             </div>
@@ -353,16 +430,71 @@
         width: 2px;
         background-color: #dee2e6;
     }
+    /* Improve accessibility for focus states */
+    .btn:focus, .form-control:focus, .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    /* Improve contrast for better readability */
+    .text-muted {
+        color: #6c757d !important;
+    }
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+    /* Improve modal accessibility */
+    .modal:focus {
+        outline: none;
+    }
+    .modal-dialog {
+        margin: 1.75rem auto;
+        max-width: 500px;
+    }
+    /* Improve table responsiveness */
+    @media (max-width: 768px) {
+        .table-responsive {
+            margin-bottom: 1rem;
+        }
+        .table td, .table th {
+            white-space: normal;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover focus'
+            })
+        });
+
+        // Add keyboard navigation for modals
+        document.querySelectorAll('.modal').forEach(function(modal) {
+            modal.addEventListener('shown.bs.modal', function() {
+                var focusableElements = modal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusableElements.length) {
+                    focusableElements[0].focus();
+                }
+            });
+        });
+
+        // Improve form validation feedback
+        document.querySelectorAll('form').forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        });
+    });
 </script>
 {% endblock %}
 {% endblock %} 
