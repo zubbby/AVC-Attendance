@@ -52,19 +52,39 @@ def signup_view(request):
             messages.error(request, 'Email already registered.')
             return render(request, 'avc_app/signup.html')
 
-        # Create user
+        # Create user with transaction to ensure atomicity
         try:
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password
-            )
-            # UserProfile will be automatically created via signal
-            messages.success(request, f'Account created successfully! Your AVC ID is {user.profile.avc_id}')
-            login(request, user)
-            return redirect('dashboard')
+            with transaction.atomic():
+                # Create the user
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password
+                )
+                
+                # Generate AVC ID (format: AVC-YYYY-XXXX where XXXX is a random number)
+                year = timezone.now().year
+                random_num = secrets.randbelow(10000)  # Random number between 0 and 9999
+                avc_id = f'AVC-{year}-{random_num:04d}'
+                
+                # Create user profile
+                from .models import UserProfile
+                UserProfile.objects.create(
+                    user=user,
+                    avc_id=avc_id
+                )
+                
+                messages.success(request, f'Account created successfully! Your AVC ID is {avc_id}')
+                login(request, user)
+                return redirect('dashboard')
+                
+        except IntegrityError as e:
+            messages.error(request, 'An error occurred while creating your account. Please try again.')
+            logger.error(f'Error creating user account: {str(e)}')
+            return render(request, 'avc_app/signup.html')
         except Exception as e:
-            messages.error(request, f'Error creating account: {str(e)}')
+            messages.error(request, 'An unexpected error occurred. Please try again.')
+            logger.error(f'Unexpected error during signup: {str(e)}')
             return render(request, 'avc_app/signup.html')
 
     return render(request, 'avc_app/signup.html')
