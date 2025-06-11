@@ -17,23 +17,13 @@ from io import BytesIO
 import base64
 import secrets
 from .utils import get_client_ip, check_ip_security, validate_ip_address
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from .forms import PermissionRequestForm, PermissionApprovalForm
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 from datetime import datetime
-from django.db.models import Count
-from django.db.utils import IntegrityError as DjangoIntegrityError
-from django.db.models.functions import Cast
-from django.db.models import Q
-from django.db.models import F
-from django.db.models import Case
-from django.db.models import When
-from django.db.models import Value
-from django.db.models.functions import Coalesce
-from django.db.models import Count
-from django.db.models import PageNotAnInteger
-from django.db.models import EmptyPage
+from django.db.models import Count, Q, F, Case, When, Value
+from django.db.models.functions import Cast, Coalesce
 import logging
 
 logger = logging.getLogger(__name__)
