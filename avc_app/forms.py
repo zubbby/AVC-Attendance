@@ -30,20 +30,22 @@ class PermissionApprovalForm(forms.ModelForm):
                 choices=[('approved', 'Approve'), ('rejected', 'Reject')],
                 attrs={'class': 'form-select'}
             ),
-            'admin_comment': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Please provide a reason for your decision...'
-            })
+            'admin_comment': forms.Textarea(
+                attrs={
+                    'class': 'form-control',
+                    'rows': 3,
+                    'placeholder': 'Please provide a reason for your decision...',
+                    'required': True
+                }
+            )
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['admin_comment'].required = True
-        self.fields['admin_comment'].help_text = 'Please provide a clear explanation for your decision (5-500 characters).'
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        admin_comment = cleaned_data.get('admin_comment')
 
-    def clean_admin_comment(self):
-        comment = self.cleaned_data['admin_comment']
-        if len(comment.strip()) < 5:
-            raise forms.ValidationError('Please provide a more detailed comment (minimum 5 characters).')
-        return comment.strip() 
+        if not admin_comment:
+            raise forms.ValidationError('Please provide a reason for your decision.')
+
+        return cleaned_data 
