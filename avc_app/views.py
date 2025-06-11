@@ -7,10 +7,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
-from .user_profile import UserProfile
+from .models import Session, AttendanceRecord, IPBlacklist, Permission, UserProfile
 import requests
 import json
-from .models import Session, AttendanceRecord, IPBlacklist, Permission
 from django.utils import timezone
 import qrcode
 from io import BytesIO
@@ -68,7 +67,6 @@ def signup_view(request):
                 avc_id = f'AVC-{year}-{random_num:04d}'
                 
                 # Create user profile
-                from .models import UserProfile
                 UserProfile.objects.create(
                     user=user,
                     avc_id=avc_id
