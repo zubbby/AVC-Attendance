@@ -554,12 +554,17 @@ def export_attendance_csv(request):
     # Get all attendance records with related data
     records = AttendanceRecord.objects.select_related(
         'user', 'user__profile', 'session'
-    ).prefetch_related('permission_set').order_by('-marked_at')
+    ).order_by('-marked_at')
     
     # Write data rows
     for record in records:
         try:
-            permission = record.permission_set.first()  # Get the first permission if exists
+            # Get the permission for this session and user if it exists
+            permission = Permission.objects.filter(
+                session=record.session,
+                user=record.user
+            ).first()
+            
             writer.writerow([
                 record.id,
                 record.user.get_full_name() or record.user.username,
