@@ -7,7 +7,11 @@ class PermissionRequestForm(forms.ModelForm):
         model = Permission
         fields = ['session', 'reason', 'explanation']
         widgets = {
-            'explanation': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Please explain your reason for requesting permission...'}),
+            'explanation': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Please explain your reason for requesting permission...',
+                'class': 'form-control'
+            }),
             'session': forms.Select(attrs={'class': 'form-select'}),
             'reason': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -19,7 +23,29 @@ class PermissionRequestForm(forms.ModelForm):
             # Only show sessions that haven't ended yet
             self.fields['session'].queryset = Session.objects.filter(
                 end_time__gt=timezone.now()
-            )
+            ).order_by('-start_time')  # Order by most recent first
+
+    def clean_explanation(self):
+        explanation = self.cleaned_data.get('explanation')
+        if not explanation or len(explanation.strip()) < 10:
+            raise forms.ValidationError('Please provide a detailed explanation (minimum 10 characters).')
+        return explanation.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        session = cleaned_data.get('session')
+        reason = cleaned_data.get('reason')
+        
+        if session and reason:
+            # Check if session has already ended
+            if session.end_time < timezone.now():
+                raise forms.ValidationError('Cannot request permission for a session that has already ended.')
+            
+            # Check if session hasn't started yet
+            if session.start_time > timezone.now():
+                raise forms.ValidationError('Cannot request permission for a session that hasn\'t started yet.')
+        
+        return cleaned_data
 
 class PermissionApprovalForm(forms.ModelForm):
     class Meta:
@@ -28,14 +54,18 @@ class PermissionApprovalForm(forms.ModelForm):
         widgets = {
             'status': forms.Select(
                 choices=[('approved', 'Approve'), ('rejected', 'Reject')],
-                attrs={'class': 'form-select'}
+                attrs={
+                    'class': 'form-select',
+                    'aria-label': 'Decision'
+                }
             ),
             'admin_comment': forms.Textarea(
                 attrs={
                     'class': 'form-control',
                     'rows': 3,
                     'placeholder': 'Please provide a reason for your decision...',
-                    'required': True
+                    'required': True,
+                    'aria-label': 'Admin Comment'
                 }
             )
         }
@@ -45,7 +75,7 @@ class PermissionApprovalForm(forms.ModelForm):
         status = cleaned_data.get('status')
         admin_comment = cleaned_data.get('admin_comment')
 
-        if not admin_comment:
-            raise forms.ValidationError('Please provide a reason for your decision.')
+        if not admin_comment or len(admin_comment.strip()) < 10:
+            raise forms.ValidationError('Please provide a detailed reason for your decision (minimum 10 characters).')
 
         return cleaned_data 
