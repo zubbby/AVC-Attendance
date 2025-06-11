@@ -161,17 +161,17 @@
                             {% endif %}
                         </tr>
 
-                        <!-- Approval Modal - Only for staff -->
-                        {% if user.is_staff and permission.status == 'pending' %}
+                        <!-- Approval Modal -->
+                        {% if permission.status == 'pending' %}
                         <div class="modal fade" id="approvalModal{{ permission.id }}" tabindex="-1" aria-labelledby="approvalModalLabel{{ permission.id }}" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="approvalModalLabel{{ permission.id }}">Review Permission Request</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
                                     <form method="post" action="{% url 'approve_permission' permission.id %}">
                                         {% csrf_token %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="approvalModalLabel{{ permission.id }}">Review Permission Request</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
                                         <div class="modal-body">
                                             <div class="alert alert-info">
                                                 <i class="fas fa-info-circle me-2"></i>
@@ -195,18 +195,11 @@
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Reason</label>
-                                                <p class="mb-0">
-                                                    <span class="badge {% if permission.reason == 'late' %}bg-warning{% else %}bg-danger{% endif %}">
-                                                        {{ permission.get_reason_display }}
-                                                    </span>
-                                                </p>
+                                                <p class="mb-0">{{ permission.get_reason_display }}</p>
+                                                <small class="text-muted">{{ permission.explanation }}</small>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Explanation</label>
-                                                <p class="border rounded p-2 bg-light">{{ permission.explanation }}</p>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Status</label>
+                                                <label class="form-label">Decision</label>
                                                 <select name="status" class="form-select" required>
                                                     <option value="approved">Approve</option>
                                                     <option value="rejected">Reject</option>
