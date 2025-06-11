@@ -1,6 +1,13 @@
 from django.contrib import admin
-from .models import Permission, Session, AttendanceRecord, IPBlacklist
-from .user_profile import UserProfile
+from .models import Permission, Session, AttendanceRecord, IPBlacklist, UserProfile
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'avc_id', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('user__username', 'user__email', 'avc_id')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('user',)
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
@@ -58,5 +65,4 @@ class PermissionAdmin(admin.ModelAdmin):
             'user', 'user__profile', 'session', 'approved_by'
         )
 
-admin.site.register(UserProfile)
 admin.site.register(IPBlacklist)
