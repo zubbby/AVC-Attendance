@@ -60,22 +60,13 @@ def signup_view(request):
                     email=email,
                     password=password
                 )
-                
-                # Generate AVC ID (format: AVC-YYYY-XXXX where XXXX is a random number)
-                year = timezone.now().year
-                random_num = secrets.randbelow(10000)  # Random number between 0 and 9999
-                avc_id = f'AVC-{year}-{random_num:04d}'
-                
                 # Create user profile
                 UserProfile.objects.create(
-                    user=user,
-                    avc_id=avc_id
+                    user=user
                 )
-                
-                messages.success(request, f'Account created successfully! Your AVC ID is {avc_id}')
+                messages.success(request, f'Account created successfully!')
                 login(request, user)
                 return redirect('dashboard')
-                
         except IntegrityError as e:
             messages.error(request, 'An error occurred while creating your account. Please try again.')
             logger.error(f'Error creating user account: {str(e)}')
@@ -375,7 +366,7 @@ def permission_list(request):
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
     try:
-        page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.get_page(1)
     
@@ -429,8 +420,8 @@ def approve_permission(request, permission_id):
     if form.is_valid():
         try:
             with transaction.atomic():
-                permission = form.save(commit=False)
-                permission.approved_by = request.user
+        permission = form.save(commit=False)
+        permission.approved_by = request.user
                 permission.approved_at = timezone.now()
                 permission.save()
                 
@@ -479,7 +470,7 @@ def reject_permission(request, permission_id):
                 permission.status = 'rejected'  # Force status to rejected
                 permission.approved_by = request.user
                 permission.approved_at = timezone.now()
-                permission.save()
+        permission.save()
                 
                 messages.info(
                     request,
@@ -512,7 +503,7 @@ def export_permissions_csv(request):
     
     # Write headers
     writer.writerow([
-        'Request ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
+        'Request ID', 'Student Name', 'Session', 'Session Date',
         'Reason', 'Explanation', 'Status', 'Admin Comment', 'Requested At',
         'Processed By', 'Processed At'
     ])
@@ -525,20 +516,19 @@ def export_permissions_csv(request):
     # Write data rows
     for perm in permissions:
         try:
-            writer.writerow([
-                perm.id,
-                perm.user.get_full_name() or perm.user.username,
-                perm.user.profile.avc_id,
-                perm.session.name,
-                perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
-                perm.get_reason_display(),
-                perm.explanation,
-                perm.get_status_display(),
-                perm.admin_comment or '',
-                perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                perm.approved_by.get_full_name() if perm.approved_by else '',
-                perm.approved_at.strftime('%Y-%m-%d %H:%M:%S') if perm.approved_at else ''
-            ])
+        writer.writerow([
+            perm.id,
+            perm.user.get_full_name() or perm.user.username,
+            perm.session.name,
+            perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
+            perm.get_reason_display(),
+            perm.explanation,
+            perm.get_status_display(),
+            perm.admin_comment or '',
+            perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            perm.approved_by.get_full_name() if perm.approved_by else '',
+            perm.approved_at.strftime('%Y-%m-%d %H:%M:%S') if perm.approved_at else ''
+        ])
         except Exception as e:
             # Log the error but continue processing
             logger.error(f'Error exporting permission {perm.id}: {str(e)}')
@@ -564,7 +554,7 @@ def export_attendance_csv(request):
     
     # Write headers
     writer.writerow([
-        'Record ID', 'Student Name', 'AVC ID', 'Session', 'Session Date',
+        'Record ID', 'Student Name', 'Session', 'Session Date',
         'Status', 'Permission Status', 'Permission Reason', 'Admin Comment',
         'Marked At', 'IP Address', 'Location', 'Valid'
     ])
@@ -583,21 +573,20 @@ def export_attendance_csv(request):
                 user=record.user
             ).first()
             
-            writer.writerow([
-                record.id,
-                record.user.get_full_name() or record.user.username,
-                record.user.profile.avc_id,
-                record.session.name,
-                record.session.start_time.strftime('%Y-%m-%d %H:%M'),
-                'Present' if record.is_valid else 'Absent',
-                permission.get_status_display() if permission else 'N/A',
-                permission.get_reason_display() if permission else 'N/A',
-                permission.admin_comment if permission and permission.admin_comment else '',
-                record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
-                record.ip_address,
-                record.location or 'Unknown',
-                'Yes' if record.is_valid else 'No'
-            ])
+        writer.writerow([
+            record.id,
+            record.user.get_full_name() or record.user.username,
+            record.session.name,
+            record.session.start_time.strftime('%Y-%m-%d %H:%M'),
+            'Present' if record.is_valid else 'Absent',
+            permission.get_status_display() if permission else 'N/A',
+            permission.get_reason_display() if permission else 'N/A',
+            permission.admin_comment if permission and permission.admin_comment else '',
+            record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
+            record.ip_address,
+            record.location or 'Unknown',
+            'Yes' if record.is_valid else 'No'
+        ])
         except Exception as e:
             # Log the error but continue processing
             logger.error(f'Error exporting attendance record {record.id}: {str(e)}')
