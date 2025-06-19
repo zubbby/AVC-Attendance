@@ -366,7 +366,7 @@ def permission_list(request):
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
     try:
-    page_obj = paginator.get_page(page_number)
+        page_obj = paginator.get_page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.get_page(1)
     
