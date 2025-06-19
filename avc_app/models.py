@@ -14,7 +14,6 @@ def generate_session_token():
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avc_id = models.CharField(max_length=20, unique=True, help_text="Unique identifier for the user (format: AVC-YYYY-XXXX)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,73 +23,23 @@ class UserProfile(models.Model):
         verbose_name_plural = 'User Profiles'
 
     def __str__(self):
-        return f"{self.user.get_full_name() or self.user.username} ({self.avc_id})"
+        return f"{self.user.get_full_name() or self.user.username}"
 
     @property
     def full_name(self):
         return self.user.get_full_name() or self.user.username
-
-    def clean(self):
-        """Validate the AVC ID format"""
-        if not self.avc_id.startswith('AVC-'):
-            raise ValidationError({'avc_id': 'AVC ID must start with "AVC-"'})
-        try:
-            year = int(self.avc_id.split('-')[1])
-            number = int(self.avc_id.split('-')[2])
-            if not (2020 <= year <= timezone.now().year + 1):
-                raise ValidationError({'avc_id': 'Invalid year in AVC ID'})
-            if not (0 <= number <= 9999):
-                raise ValidationError({'avc_id': 'Invalid number in AVC ID'})
-        except (IndexError, ValueError):
-            raise ValidationError({'avc_id': 'Invalid AVC ID format'})
-
-def generate_avc_id():
-    """Generate a unique AVC ID in the format AVC-YYYY-XXXX"""
-    year = timezone.now().year
-    max_attempts = 100  # Prevent infinite loops
-    attempts = 0
-    
-    while attempts < max_attempts:
-        random_num = secrets.randbelow(10000)  # Random number between 0 and 9999
-        avc_id = f'AVC-{year}-{random_num:04d}'
-        if not UserProfile.objects.filter(avc_id=avc_id).exists():
-            return avc_id
-        attempts += 1
-    
-    raise ValidationError("Could not generate a unique AVC ID after maximum attempts")
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Signal to automatically create a UserProfile when a new User is created"""
     if created:
         try:
-            UserProfile.objects.get_or_create(
-                user=instance,
-                defaults={'avc_id': generate_avc_id()}
-            )
+            UserProfile.objects.get_or_create(user=instance)
         except Exception as e:
             # Log the error but don't prevent user creation
             logger = logging.getLogger(__name__)
             logger.error(f"Error creating user profile for {instance.username}: {str(e)}")
             raise ValidationError(f"Error creating user profile: {str(e)}")
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    """Signal to ensure UserProfile exists and is saved when User is saved"""
-    try:
-        if not hasattr(instance, 'profile'):
-            # Create profile if it doesn't exist
-            UserProfile.objects.create(
-                user=instance,
-                avc_id=generate_avc_id()
-            )
-        else:
-            # Save existing profile
-            instance.profile.save()
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error saving user profile for {instance.username}: {str(e)}")
-        # Don't raise the exception to prevent user save from failing
 
 class Session(models.Model):
     name = models.CharField(max_length=200)
