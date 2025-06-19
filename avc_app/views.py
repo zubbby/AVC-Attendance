@@ -366,7 +366,7 @@ def permission_list(request):
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
     try:
-        page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.get_page(1)
     
@@ -420,8 +420,8 @@ def approve_permission(request, permission_id):
     if form.is_valid():
         try:
             with transaction.atomic():
-                permission = form.save(commit=False)
-                permission.approved_by = request.user
+        permission = form.save(commit=False)
+        permission.approved_by = request.user
                 permission.approved_at = timezone.now()
                 permission.save()
                 
@@ -470,7 +470,7 @@ def reject_permission(request, permission_id):
                 permission.status = 'rejected'  # Force status to rejected
                 permission.approved_by = request.user
                 permission.approved_at = timezone.now()
-                permission.save()
+        permission.save()
                 
                 messages.info(
                     request,
