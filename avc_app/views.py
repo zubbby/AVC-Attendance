@@ -36,19 +36,19 @@ def signup_view(request):
 
         # Validate input
         if not all([username, email, password, confirm_password]):
-            messages.error(request, 'All fields are required.')
+            messages.error(request, 'All fields are required. Please fill in your username, email, password, and confirm password.')
             return render(request, 'avc_app/signup.html')
 
         if password != confirm_password:
-            messages.error(request, 'Passwords do not match.')
+            messages.error(request, 'Passwords do not match. Please ensure both password fields are identical.')
             return render(request, 'avc_app/signup.html')
 
         if User.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists.')
+            messages.error(request, f'The username "{username}" is already taken. Please choose a different username.')
             return render(request, 'avc_app/signup.html')
 
         if User.objects.filter(email=email).exists():
-            messages.error(request, 'Email already registered.')
+            messages.error(request, f'The email address "{email}" is already registered. Please use a different email or log in.')
             return render(request, 'avc_app/signup.html')
 
         # Create user with transaction to ensure atomicity
@@ -68,11 +68,11 @@ def signup_view(request):
                 login(request, user)
                 return redirect('dashboard')
         except IntegrityError as e:
-            messages.error(request, 'An error occurred while creating your account. Please try again.')
+            messages.error(request, f'Account creation failed due to a database error: {str(e)}. Please contact support if this persists.')
             logger.error(f'Error creating user account: {str(e)}')
             return render(request, 'avc_app/signup.html')
         except Exception as e:
-            messages.error(request, 'An unexpected error occurred. Please try again.')
+            messages.error(request, f'An unexpected error occurred during signup: {str(e)}. Please try again or contact support.')
             logger.error(f'Unexpected error during signup: {str(e)}')
             return render(request, 'avc_app/signup.html')
 
@@ -129,11 +129,11 @@ def dashboard(request):
                 messages.success(request, 'Session created successfully!')
                 return redirect('dashboard')
             else:
-                messages.error(request, 'Please correct the errors below.')
+                messages.error(request, 'Please correct the errors below in the session creation form. Check all required fields and try again.')
         else:
             session_form = SessionForm()
     elif request.method == 'POST' and 'create_session' in request.POST:
-        messages.error(request, 'Only staff can create sessions.')
+        messages.error(request, 'Only staff members are allowed to create sessions. If you believe this is an error, contact an administrator.')
 
     # Get current active session that the user is allowed to attend
     now = timezone.now()
@@ -300,7 +300,7 @@ def login_view(request):
             next_url = request.GET.get('next', 'dashboard')
             return redirect(next_url)
         else:
-            messages.error(request, 'Invalid username or password.')
+            messages.error(request, 'Invalid username or password. Please check your credentials and try again.')
     
     return render(request, 'avc_app/login.html')
 
@@ -335,7 +335,7 @@ def request_permission(request):
                         messages.success(request, 'Permission request submitted successfully.')
                         return redirect('dashboard')
                     except IntegrityError:
-                        messages.error(request, 'An error occurred while submitting your request. Please try again.')
+                        messages.error(request, 'A database error occurred while submitting your permission request. Please try again or contact support.')
                 return redirect('request_permission')
             
             try:
@@ -345,7 +345,7 @@ def request_permission(request):
                 messages.success(request, 'Permission request submitted successfully.')
                 return redirect('dashboard')
             except IntegrityError:
-                messages.error(request, 'An error occurred while submitting your request. Please try again.')
+                messages.error(request, 'A database error occurred while submitting your permission request. Please try again or contact support.')
     else:
         form = PermissionRequestForm(user=request.user)
     
@@ -379,7 +379,7 @@ def permission_list(request):
             date_obj = datetime.strptime(date, '%Y-%m-%d').date()
             permissions = permissions.filter(session__start_time__date=date_obj)
         except ValueError:
-            messages.error(request, 'Invalid date format.')
+            messages.error(request, 'Invalid date format. Please use YYYY-MM-DD.')
 
     # Order by most recent first
     permissions = permissions.order_by('-created_at')
@@ -459,11 +459,11 @@ def approve_permission(request, permission_id):
                         f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.'
                     )
         except Exception as e:
-            messages.error(request, f'An error occurred while processing the request: {str(e)}')
+            messages.error(request, f'Failed to process the permission request: {str(e)}. Please contact support if this continues.')
     else:
         for field, errors in form.errors.items():
             for error in errors:
-                messages.error(request, f'{field}: {error}')
+                messages.error(request, f'Field "{field}": {error}')
     
     return redirect('permission_list')
 
@@ -499,11 +499,11 @@ def reject_permission(request, permission_id):
                     f'Permission request rejected for {permission.user.get_full_name() or permission.user.username}.'
                 )
         except Exception as e:
-            messages.error(request, f'An error occurred while processing the request: {str(e)}')
+            messages.error(request, f'Failed to process the permission rejection: {str(e)}. Please contact support if this continues.')
     else:
         for field, errors in form.errors.items():
             for error in errors:
-                messages.error(request, f'{field}: {error}')
+                messages.error(request, f'Field "{field}": {error}')
     
     return redirect('permission_list')
 
