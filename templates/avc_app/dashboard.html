@@ -6,6 +6,62 @@
 {% block content %}
 <div class="container py-4">
     <div class="row g-4">
+        <!-- Session Creation Form -->
+        {% if show_session_form %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    <h4 class="mb-0">Create New Session</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="row g-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="create_session" value="1">
+                        {% if session_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ session_form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        <div class="col-md-4">
+                            <label for="id_name" class="form-label">Session Name</label>
+                            {{ session_form.name }}
+                            {% if session_form.name.errors %}
+                                <div class="text-danger small">{{ session_form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_start_time" class="form-label">Start Time</label>
+                            {{ session_form.start_time }}
+                            {% if session_form.start_time.errors %}
+                                <div class="text-danger small">{{ session_form.start_time.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_end_time" class="form-label">End Time</label>
+                            {{ session_form.end_time }}
+                            {% if session_form.end_time.errors %}
+                                <div class="text-danger small">{{ session_form.end_time.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_allowed_users" class="form-label">Allowed Users</label>
+                            {{ session_form.allowed_users }}
+                            {% if session_form.allowed_users.errors %}
+                                <div class="text-danger small">{{ session_form.allowed_users.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus me-2"></i>Create Session
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Statistics Overview -->
         <div class="col-12">
             <div class="card">
