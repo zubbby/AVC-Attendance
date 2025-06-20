@@ -53,7 +53,7 @@ class PermissionApprovalForm(forms.ModelForm):
         fields = ['status', 'admin_comment']
         widgets = {
             'status': forms.Select(
-                choices=[('approved', 'Approve'), ('rejected', 'Reject')],
+        choices=[('approved', 'Approve'), ('rejected', 'Reject')],
                 attrs={
                     'class': 'form-select',
                     'aria-label': 'Decision'
@@ -61,8 +61,8 @@ class PermissionApprovalForm(forms.ModelForm):
             ),
             'admin_comment': forms.Textarea(
                 attrs={
-                    'class': 'form-control',
-                    'rows': 3,
+            'class': 'form-control',
+            'rows': 3,
                     'placeholder': 'Please provide a reason for your decision...',
                     'required': True,
                     'aria-label': 'Admin Comment'
@@ -78,4 +78,23 @@ class PermissionApprovalForm(forms.ModelForm):
         if not admin_comment or len(admin_comment.strip()) < 10:
             raise forms.ValidationError('Please provide a detailed reason for your decision (minimum 10 characters).')
 
+        return cleaned_data
+
+class SessionForm(forms.ModelForm):
+    class Meta:
+        model = Session
+        fields = ['name', 'start_time', 'end_time', 'allowed_users']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Session Name'}),
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'allowed_users': forms.SelectMultiple(attrs={'class': 'form-select'})
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if start_time and end_time and end_time <= start_time:
+            raise forms.ValidationError('End time must be after start time.')
         return cleaned_data 
