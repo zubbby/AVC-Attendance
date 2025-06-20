@@ -17,7 +17,7 @@ import base64
 import secrets
 from .utils import get_client_ip, check_ip_security, validate_ip_address
 from django.db import IntegrityError, transaction
-from .forms import PermissionRequestForm, PermissionApprovalForm
+from .forms import PermissionRequestForm, PermissionApprovalForm, SessionForm
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 from datetime import datetime
@@ -115,6 +115,26 @@ def check_ip_security(ip_address):
 
 @login_required
 def dashboard(request):
+    # Only staff can create sessions
+    show_session_form = request.user.is_staff
+    session_form = None
+    if show_session_form:
+        if request.method == 'POST' and 'create_session' in request.POST:
+            session_form = SessionForm(request.POST)
+            if session_form.is_valid():
+                session = session_form.save(commit=False)
+                session.created_by = request.user
+                session.save()
+                session_form.save_m2m()
+                messages.success(request, 'Session created successfully!')
+                return redirect('dashboard')
+            else:
+                messages.error(request, 'Please correct the errors below.')
+        else:
+            session_form = SessionForm()
+    elif request.method == 'POST' and 'create_session' in request.POST:
+        messages.error(request, 'Only staff can create sessions.')
+
     # Get current active session that the user is allowed to attend
     now = timezone.now()
     active_session = Session.objects.filter(
@@ -173,6 +193,8 @@ def dashboard(request):
         'current_attendance': current_attendance,
         'recent_attendance': recent_attendance,
         'attendance_stats': attendance_stats,
+        'session_form': session_form,
+        'show_session_form': show_session_form,
     }
     return render(request, 'avc_app/dashboard.html', context)
 
@@ -366,7 +388,7 @@ def permission_list(request):
     paginator = Paginator(permissions, 10)  # Show 10 permissions per page
     page_number = request.GET.get('page')
     try:
-    page_obj = paginator.get_page(page_number)
+        page_obj = paginator.get_page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.get_page(1)
     
@@ -420,8 +442,8 @@ def approve_permission(request, permission_id):
     if form.is_valid():
         try:
             with transaction.atomic():
-        permission = form.save(commit=False)
-        permission.approved_by = request.user
+                permission = form.save(commit=False)
+                permission.approved_by = request.user
                 permission.approved_at = timezone.now()
                 permission.save()
                 
@@ -470,7 +492,7 @@ def reject_permission(request, permission_id):
                 permission.status = 'rejected'  # Force status to rejected
                 permission.approved_by = request.user
                 permission.approved_at = timezone.now()
-        permission.save()
+                permission.save()
                 
                 messages.info(
                     request,
@@ -516,19 +538,19 @@ def export_permissions_csv(request):
     # Write data rows
     for perm in permissions:
         try:
-        writer.writerow([
-            perm.id,
-            perm.user.get_full_name() or perm.user.username,
-            perm.session.name,
-            perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
-            perm.get_reason_display(),
-            perm.explanation,
-            perm.get_status_display(),
-            perm.admin_comment or '',
-            perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            perm.approved_by.get_full_name() if perm.approved_by else '',
-            perm.approved_at.strftime('%Y-%m-%d %H:%M:%S') if perm.approved_at else ''
-        ])
+            writer.writerow([
+                perm.id,
+                perm.user.get_full_name() or perm.user.username,
+                perm.session.name,
+                perm.session.start_time.strftime('%Y-%m-%d %H:%M'),
+                perm.get_reason_display(),
+                perm.explanation,
+                perm.get_status_display(),
+                perm.admin_comment or '',
+                perm.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                perm.approved_by.get_full_name() if perm.approved_by else '',
+                perm.approved_at.strftime('%Y-%m-%d %H:%M:%S') if perm.approved_at else ''
+            ])
         except Exception as e:
             # Log the error but continue processing
             logger.error(f'Error exporting permission {perm.id}: {str(e)}')
@@ -573,20 +595,20 @@ def export_attendance_csv(request):
                 user=record.user
             ).first()
             
-        writer.writerow([
-            record.id,
-            record.user.get_full_name() or record.user.username,
-            record.session.name,
-            record.session.start_time.strftime('%Y-%m-%d %H:%M'),
-            'Present' if record.is_valid else 'Absent',
-            permission.get_status_display() if permission else 'N/A',
-            permission.get_reason_display() if permission else 'N/A',
-            permission.admin_comment if permission and permission.admin_comment else '',
-            record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
-            record.ip_address,
-            record.location or 'Unknown',
-            'Yes' if record.is_valid else 'No'
-        ])
+            writer.writerow([
+                record.id,
+                record.user.get_full_name() or record.user.username,
+                record.session.name,
+                record.session.start_time.strftime('%Y-%m-%d %H:%M'),
+                'Present' if record.is_valid else 'Absent',
+                permission.get_status_display() if permission else 'N/A',
+                permission.get_reason_display() if permission else 'N/A',
+                permission.admin_comment if permission and permission.admin_comment else '',
+                record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
+                record.ip_address,
+                record.location or 'Unknown',
+                'Yes' if record.is_valid else 'No'
+            ])
         except Exception as e:
             # Log the error but continue processing
             logger.error(f'Error exporting attendance record {record.id}: {str(e)}')
