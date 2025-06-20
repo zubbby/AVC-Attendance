@@ -55,7 +55,7 @@ def signup_view(request):
         try:
             with transaction.atomic():
                 # Create the user
-                user = User.objects.get_or_create_user(
+                user = User.objects.create_user(
                     username=username,
                     email=email,
                     password=password
