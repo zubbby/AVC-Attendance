@@ -55,13 +55,13 @@ def signup_view(request):
         try:
             with transaction.atomic():
                 # Create the user
-                user = User.objects.create_user(
+                user = User.objects.get_or_create_user(
                     username=username,
                     email=email,
                     password=password
                 )
                 # Create user profile
-                UserProfile.objects.create(
+                UserProfile.objects.get_or_create(
                     user=user
                 )
                 messages.success(request, f'Account created successfully!')
