@@ -606,7 +606,7 @@ def export_attendance_csv(request):
                 permission.admin_comment if permission and permission.admin_comment else '',
                 record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
                 record.ip_address,
-                record.location or 'Unknown',
+                #record.location or 'Unknown',
                 'Yes' if record.is_valid else 'No'
             ])
         except Exception as e:
