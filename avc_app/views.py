@@ -558,62 +558,62 @@ def export_permissions_csv(request):
     
     return response
 
+from django.http import StreamingHttpResponse
+
 @login_required
 def export_attendance_csv(request):
     if not request.user.is_staff:
         return HttpResponseForbidden()
-    
-    # Create the HttpResponse object with CSV header
-    response = HttpResponse(
-        content_type='text/csv',
-        headers={
-            'Content-Disposition': f'attachment; filename="attendance_records_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-        }
-    )
-    
-    # Create CSV writer with proper encoding
-    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
-    
-    # Write headers
-    writer.writerow([
-        'Record ID', 'Student Name', 'Session', 'Session Date',
-        'Status', 'Permission Status', 'Permission Reason', 'Admin Comment',
-        'Marked At', 'IP Address', 'Location', 'Valid'
-    ])
-    
-    # Get all attendance records with related data
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"attendance_records_{timestamp}.csv"
+
     records = AttendanceRecord.objects.select_related(
         'user', 'user__profile', 'session'
     ).order_by('-marked_at')
-    
-    # Write data rows
-    for record in records:
-        try:
-            # Get the permission for this session and user if it exists
-            permission = Permission.objects.filter(
-                session=record.session,
-                user=record.user
-            ).first()
-            
-            writer.writerow([
+
+    # Preload permissions
+    permissions_lookup = {
+        (perm.session_id, perm.user_id): perm
+        for perm in Permission.objects.select_related('approved_by').all()
+    }
+
+    # Generator function for streaming
+    def row_generator():
+        yield [
+            'Record ID', 'Student Name', 'Session', 'Session Date',
+            'Status', 'Permission Status', 'Permission Reason',
+            'Admin Comment', 'Marked At', 'IP Address', 'Valid'
+        ]
+        for record in records.iterator():  # Use iterator to reduce memory
+            perm = permissions_lookup.get((record.session_id, record.user_id))
+            yield [
                 record.id,
                 record.user.get_full_name() or record.user.username,
                 record.session.name,
                 record.session.start_time.strftime('%Y-%m-%d %H:%M'),
                 'Present' if record.is_valid else 'Absent',
-                permission.get_status_display() if permission else 'N/A',
-                permission.get_reason_display() if permission else 'N/A',
-                permission.admin_comment if permission and permission.admin_comment else '',
+                perm.get_status_display() if perm else 'N/A',
+                perm.get_reason_display() if perm else 'N/A',
+                perm.admin_comment if perm and perm.admin_comment else '',
                 record.marked_at.strftime('%Y-%m-%d %H:%M:%S'),
                 record.ip_address,
-                #record.location or 'Unknown',
-                'Yes' if record.is_valid else 'No'
-            ])
-        except Exception as e:
-            # Log the error but continue processing
-            logger.error(f'Error exporting attendance record {record.id}: {str(e)}')
-            continue
-    
+                'Yes' if record.is_valid else 'No',
+            ]
+
+    # Stream response
+    class Echo:
+        def write(self, value):
+            return value
+
+    pseudo_buffer = Echo()
+    writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_ALL)
+
+    response = StreamingHttpResponse(
+        (writer.writerow(row) for row in row_generator()),
+        content_type='text/csv'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 def handler404(request, exception):
