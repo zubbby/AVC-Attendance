@@ -1,0 +1,116 @@
+Here's a perfect AI prompt that clearly and completely defines the system you're building. You can use this prompt with an AI system (like a code generator, UI builder, or prototype designer) to generate the backend, frontend, or full stack.
+
+
+---
+
+🔧 AI Prompt for Building Your Investment Website
+
+> Prompt:
+
+Build a professional, full-stack investment website platform with the following features:
+
+🧑‍💼 User Features:
+
+User registration and login (with email verification if possible)
+
+Manual deposit using Bitcoin:
+
+Display a fixed Bitcoin wallet address (admin-controlled)
+
+User copies address and sends funds manually
+
+User clicks “I have transferred” to notify admin
+
+Admin reviews and confirms deposit
+
+After confirmation, user's balance updates
+
+
+Simulated withdrawal system:
+
+User enters amount and password
+
+System deducts balance and shows “Successful” (no real transfer)
+
+
+Full transaction history:
+
+Deposits, simulated withdrawals, investments, crypto trades
+
+
+Investment plans dashboard:
+
+Users can view and subscribe to available investment plans
+
+Plans show start/end date, rate/return
+
+On reaching the end date, profit is automatically credited to user balance
+
+
+Profile tab:
+
+Displays user info (name, email, join date, etc.)
+
+
+Email notifications:
+
+Sent on deposits, confirmations, login attempts, and investment actions
+
+
+Real-time crypto and stock data using TradingView widgets or API
+
+Beautiful, sleek, modern UI using a flat, dark-light toggle design
+
+Responsive for desktop and mobile
+
+
+👨‍💻 Admin Features:
+
+Full admin panel with authentication
+
+Create, edit, pause, or delete investment plans
+
+Confirm or reject user deposits
+
+Manage users (edit, delete, view details)
+
+View all transactions and investment activity
+
+Update BTC wallet address and site-wide settings
+
+Global control of every functionality on the platform
+
+
+⚙️ Functional & Technical Requirements:
+
+Backend: Django or Laravel
+
+Frontend: React with Tailwind CSS or Next.js
+
+Database: PostgreSQL or MySQL
+
+Email system: SMTP or SendGrid/Mailgun
+
+Admin dashboard: Use Django Admin or Laravel Nova
+
+Real-time stock and crypto data: Use TradingView widget/plugin
+
+Proper error and success message displays throughout
+
+Investment plans should support:
+
+Status: Active, Paused, Ended
+
+Automatic profit distribution at end date
+
+
+
+Build it with clean code, organized structure, and scalable architecture. Allow for future integration with APIs for BTC auto-detection if needed.
+
+
+
+
+---
+
+Would you like me to turn this into a downloadable text file or plug it into a code generation system like GPT Engineer / Smol Developer format?
+
